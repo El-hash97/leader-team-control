@@ -79,7 +79,7 @@ export default function LoginPage() {
   function fail(form: HTMLFormElement, msg: string) {
     setStatus("error");
     setError(msg);
-    if (!reduced()) gsap.to(form, { keyframes: { x: [-10, 9, -6, 4, 0] }, duration: 0.45, ease: "power2.out" });
+    if (!reduced()) gsap.to(form.closest("[data-card]") ?? form, { keyframes: { x: [-10, 9, -6, 4, 0] }, duration: 0.45, ease: "power2.out" });
   }
 
   function succeed(form: HTMLFormElement) {
@@ -112,7 +112,7 @@ export default function LoginPage() {
   return (
     <div ref={root} data-login className={cn(display.variable, ui.variable, "min-h-dvh bg-ivory font-ui text-ink lg:grid lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]")}>
       {/* ——— Night panel ——— */}
-      <section className="relative isolate flex min-h-[52svh] flex-col justify-between gap-10 overflow-hidden bg-night px-6 py-7 text-ivory sm:px-10 lg:min-h-dvh lg:px-14 lg:py-12">
+      <section className="relative isolate flex min-h-[44svh] flex-col justify-end gap-10 overflow-hidden bg-night px-6 py-7 text-ivory sm:px-10 lg:min-h-dvh lg:px-14 lg:py-12">
         <svg aria-hidden viewBox="0 0 600 600" className="pointer-events-none absolute -bottom-40 -right-40 -z-10 w-[640px] max-w-none sm:-bottom-52 sm:-right-44 lg:w-[760px]">
           {[140, 210, 280].map((r, i) => (
             <path key={r} data-arc d={bigArc(r, MARK_ARCS[i].sweep)} fill="none" stroke={i === 2 ? "var(--color-brand)" : "var(--color-night-line)"}
@@ -120,17 +120,9 @@ export default function LoginPage() {
           ))}
         </svg>
 
-        <div data-exit className="flex items-center gap-3">
-          <LtcMark tone="dark" size={46} />
-          <div className="leading-tight">
-            <div className="text-[15px] font-semibold tracking-tight">Leader Team Control</div>
-            <div className="text-xs text-mist">Skill &amp; mapping peningkatan member</div>
-          </div>
-        </div>
-
         <div data-exit className="max-w-xl">
           <h1 ref={title} className="font-display text-[clamp(3.1rem,8.5vw,6.75rem)] font-normal leading-[0.94] tracking-[-0.02em] [overflow-wrap:anywhere]">
-            Dari bisa, menjadi <span className="text-brand">mahir</span>.
+            Dari bisa, menjadi <span className="text-brand">mahir.</span>
           </h1>
           <p data-fade className="mt-5 max-w-md text-[15px] leading-relaxed text-mist">
             Skill map per proses, rencana peningkatan member, dan absensi harian grup Finishing Line dalam satu tempat.
@@ -150,14 +142,22 @@ export default function LoginPage() {
       </section>
 
       {/* ——— Ivory panel ——— */}
-      <section className="flex items-center justify-center px-6 py-12 sm:px-10 lg:py-16">
-        <form onSubmit={submit} noValidate data-exit className="w-full max-w-[380px]">
+      <section className="flex items-center justify-center px-4 py-10 sm:px-10 lg:py-16">
+        <div data-card data-exit className="w-full max-w-[420px] overflow-hidden rounded-xl border border-ivory-line bg-white shadow-[0_24px_48px_-24px_rgb(60_10_16/0.35)]">
+          <header data-field className="flex items-center gap-3 bg-brand-strong px-5 py-4 text-white sm:px-6">
+            <span className="grid size-11 shrink-0 place-items-center rounded-md bg-white"><LtcMark size={32} /></span>
+            <span className="min-w-0 leading-tight">
+              <span className="block truncate text-[16px] font-bold tracking-tight">Leader Team Control</span>
+              <span className="block truncate text-xs text-[#ffe1e5]">Skill &amp; mapping peningkatan member</span>
+            </span>
+          </header>
+        <form onSubmit={submit} noValidate className="px-5 pb-7 pt-7 sm:px-7">
           <div data-field>
-            <h2 className="font-display text-[2.6rem] font-normal leading-none tracking-[-0.01em]">Masuk</h2>
+            <h2 className="font-display text-[2.4rem] font-normal leading-none tracking-[-0.01em]">Masuk</h2>
             <p className="mt-3 text-sm text-muted">Gunakan akun leader grup Anda.</p>
           </div>
 
-          <div className="mt-9 space-y-5">
+          <div className="mt-7 space-y-5">
             <label data-field className="block">
               <span className="mb-2 block text-[13px] font-semibold">Username</span>
               <input name="username" autoComplete="username" autoCapitalize="none" spellCheck={false} disabled={busy}
@@ -193,9 +193,10 @@ export default function LoginPage() {
               {status === "success" && <><Check size={18} />Berhasil masuk</>}
               {(status === "idle" || status === "error") && <>Masuk<ArrowRight size={18} className="transition-transform duration-200 group-hover:translate-x-1" /></>}
             </button>
-            <p className="mt-8 text-xs text-muted">Lupa password? Hubungi admin sistem grup Anda.</p>
+            <p className="mt-6 text-xs text-muted">Lupa password? Hubungi admin sistem grup Anda.</p>
           </div>
         </form>
+        </div>
       </section>
     </div>
   );
