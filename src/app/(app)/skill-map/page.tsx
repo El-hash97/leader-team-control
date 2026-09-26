@@ -114,7 +114,7 @@ export default function SkillMapPage() {
                     {backup.map((b) => (
                       <td key={b.process.id} className="bg-soft px-1 text-center">
                         <span className={cn("tabular inline-block min-w-12 rounded px-1.5 py-1 font-semibold", b.ok ? "text-ink" : "bg-brand-strong text-white")}>
-                          {b.count}{!b.ok && " kurang"}
+                          {b.count} {b.ok ? "✓" : "✗"}
                         </span>
                       </td>
                     ))}
