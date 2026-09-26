@@ -5,6 +5,7 @@
  * type: Instrument Serif (display, roman) + Manrope (UI)
  * motion: mark draw-on (DrawSVG) · headline line reveal (SplitText) · field stagger · error shake
  */
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState, type FormEvent } from "react";
 import { Instrument_Serif, Manrope } from "next/font/google";
@@ -82,9 +83,9 @@ export default function LoginPage() {
     if (!reduced()) gsap.to(form.closest("[data-card]") ?? form, { keyframes: { x: [-10, 9, -6, 4, 0] }, duration: 0.45, ease: "power2.out" });
   }
 
-  function succeed(form: HTMLFormElement) {
+  function succeed(form: HTMLFormElement, to: string) {
     setStatus("success");
-    const go = () => router.push("/dashboard");
+    const go = () => router.push(to);
     if (reduced()) return go();
     const parts = form.closest("[data-login]")?.querySelectorAll("[data-exit]") ?? [];
     gsap.to(parts, { autoAlpha: 0, y: -14, duration: 0.45, stagger: 0.05, ease: "power2.in", delay: 0.35 });
@@ -98,12 +99,12 @@ export default function LoginPage() {
     const f = new FormData(form);
     const user = String(f.get("username") ?? "").trim();
     const pass = String(f.get("password") ?? "");
-    if (!user || !pass) return fail(form, "Isi username dan password.");
+    if (!user || !pass) return fail(form, "Isi NoReg/username dan password.");
     setStatus("loading");
     setError("");
     // credentials are checked on the server; it sets an httpOnly session cookie on success
     login(user, pass)
-      .then((r) => (r.ok ? succeed(form) : fail(form, r.error ?? "Gagal masuk.")))
+      .then((r) => (r.ok ? succeed(form, r.to) : fail(form, r.error)))
       .catch(() => fail(form, "Server tidak bisa dihubungi. Coba lagi."));
   }
 
@@ -162,12 +163,12 @@ export default function LoginPage() {
         <form onSubmit={submit} noValidate className="px-5 pb-7 pt-7 sm:px-7">
           <div data-field>
             <h2 className="font-display text-[2.4rem] font-normal leading-none tracking-[-0.01em]">Masuk</h2>
-            <p className="mt-3 text-sm text-muted">Gunakan akun leader grup Anda.</p>
+            <p className="mt-3 text-sm text-muted">Member: NoReg 7 digit. Leader: username grup.</p>
           </div>
 
           <div className="mt-7 space-y-5">
             <label data-field className="block">
-              <span className="mb-2 block text-[13px] font-semibold">Username</span>
+              <span className="mb-2 block text-[13px] font-semibold">NoReg / username</span>
               <input name="username" autoComplete="username" autoCapitalize="none" spellCheck={false} disabled={busy}
                 aria-invalid={status === "error"} onInput={() => status === "error" && setStatus("idle")}
                 className="h-12 w-full rounded-md border border-ivory-line bg-white px-4 text-[15px] text-ink transition-colors duration-150 placeholder:text-muted/70 hover:border-muted/60 focus:border-night focus:outline-none disabled:opacity-60 aria-invalid:border-brand-strong" />
@@ -201,7 +202,10 @@ export default function LoginPage() {
               {status === "success" && <><Check size={18} />Berhasil masuk</>}
               {(status === "idle" || status === "error") && <>Masuk<ArrowRight size={18} className="transition-transform duration-200 group-hover:translate-x-1" /></>}
             </button>
-            <p className="mt-6 text-xs text-muted">Lupa password? Hubungi admin sistem grup Anda.</p>
+            <p className="mt-6 text-xs text-muted">
+              Member baru atau lupa password? Minta kode aktivasi ke leader, lalu{" "}
+              <Link href="/aktivasi" className="font-semibold text-brand-strong underline-offset-2 hover:underline">aktivasi akun</Link>.
+            </p>
           </div>
         </form>
         </div>

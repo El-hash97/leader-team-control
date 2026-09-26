@@ -31,6 +31,20 @@
   --color-zebra: #f2f6fb;
   --color-rowhover: #fdf1f2;
 
+  /* member portal (/me) · claymorphic bento from Stitch refs, lavender primary swapped for Toyota red */
+  --color-m-canvas: #f9f9fb;
+  --color-m-low: #f3f4f6;
+  --color-m-dock: #12131a;
+  --color-m-text: #111111;
+  --color-m-sub: #5f6570;
+  --color-m-red-fixed: #ffe1e4;
+  --color-m-amber: #ffbf69;
+  --color-m-amber-soft: #ffe7c7;
+  --color-m-sky: #a0c4ff;
+  --color-m-sky-soft: #dce8ff;
+  --color-m-pink: #ffadad;
+  --color-m-ok: #0e9f6e;
+
   --font-sans: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
 }
 
@@ -38,6 +52,7 @@
 @theme inline {
   --font-display: var(--font-instrument), "Times New Roman", serif;
   --font-ui: var(--font-manrope), var(--font-sans);
+  --font-jakarta: var(--font-plus-jakarta), var(--font-sans);
 }
 
 html {

@@ -138,3 +138,14 @@ export type PlanStatus = "PLANNED" | "IN_PROGRESS" | "EVALUATION" | "ACHIEVED" |
 export function displayStatus(p: { status: PlanStatus; dueDate: ISODate }, today: ISODate): PlanStatus | "OVERDUE" {
   return p.status !== "ACHIEVED" && p.status !== "CANCELLED" && p.dueDate < today ? "OVERDUE" : p.status;
 }
+
+// PRD v3 §6: a 7-digit input is a member NoReg; anything else is the leader username
+export const isMemberLogin = (input: string) => /^\d{7}$/.test(input.trim());
+
+// PRD v3 F-1106: 5 wrong passwords/codes in a row lock the account for 15 minutes, then the counter restarts
+export const MAX_FAILS = 5;
+export const LOCK_MS = 15 * 60 * 1000;
+export function nextFailState(failed: number, now: number): { failed: number; lockedUntil: number | null } {
+  const n = failed + 1;
+  return n >= MAX_FAILS ? { failed: 0, lockedUntil: now + LOCK_MS } : { failed: n, lockedUntil: null };
+}

@@ -1,13 +1,14 @@
 "use client";
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { Award, BadgeCheck, FileClock, GraduationCap, Pencil, Plus, Search, UserCheck, Users, UserX } from "lucide-react";
+import { Award, BadgeCheck, FileClock, GraduationCap, Pencil, Plus, Search, Smartphone, UserCheck, Users, UserX } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { daysLeft, dueLabel, tenure } from "@/lib/rules";
 import { fmtDate } from "@/lib/format";
 import type { Member } from "@/lib/types";
 import { Avatar, Badge, Button, Card, Dialog, EmptyState, KelasBadge, PageHeader, Stat, cn, inputCls } from "@/components/ui";
 import { MemberDialog } from "@/components/member-dialog";
+import { AccountMark, accountKind, useAccounts } from "@/components/account-card";
 
 export default function MembersPage() {
   const { s, today, sortMembers, setActive, toast } = useStore();
@@ -20,6 +21,8 @@ export default function MembersPage() {
   const pos = useMemo(() => Object.fromEntries(s.positions.map((p) => [p.id, p.name])), [s.positions]);
   const emp = useMemo(() => Object.fromEntries(s.empStatuses.map((p) => [p.id, p])), [s.empStatuses]);
   const active = s.members.filter((m) => m.active);
+  const { list: accounts } = useAccounts();
+  const acc = new Map(accounts?.map((a) => [a.memberId, a]));
   const list = s.members
     .filter((m) => (showInactive ? true : m.active))
     .filter((m) => `${m.name} ${m.noreg} ${pos[m.positionId]} ${emp[m.statusId]?.name} ${m.kelas ?? ""}`.toLowerCase().includes(q.toLowerCase()))
@@ -44,12 +47,14 @@ export default function MembersPage() {
       <PageHeader title="Data Member" desc="Database member, kelas, masa kerja, dan kontrak." icon={Users} accent="blue"
         actions={<Button variant="primary" onClick={openNew}><Plus size={17} />Tambah member</Button>} />
 
-      <div className="mb-4 grid grid-cols-3 gap-3 sm:grid-cols-5">
+      <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <Stat label="Total aktif" value={active.length} icon={Users} accent="blue" />
         <Stat icon={BadgeCheck} accent="green" label="Tetap" value={active.filter((m) => emp[m.statusId]?.name === "Karyawan Tetap").length} />
         <Stat icon={FileClock} accent="amber" label="PKWT" value={active.filter((m) => emp[m.statusId]?.name === "PKWT").length} />
         <Stat icon={GraduationCap} accent="teal" label="Vokasi" value={active.filter((m) => emp[m.statusId]?.name === "Vokasi").length} />
         <Stat icon={Award} accent="violet" label="Kelas 5–6" value={active.filter((m) => m.kelas && +m.kelas[0] >= 5).length} />
+        <Stat icon={Smartphone} accent="red" label="Akun aplikasi aktif"
+          value={accounts ? `${active.filter((m) => accountKind(acc.get(m.id)) === "active").length}/${active.length}` : "…"} />
       </div>
 
       <Card>
@@ -86,7 +91,7 @@ export default function MembersPage() {
                       <td className="px-4 py-2.5">
                         <Link href={`/members/${m.id}`} className="flex items-center gap-3 hover:underline">
                           <Avatar name={m.name} photoUrl={m.photoUrl} />
-                          <span><b className="block font-semibold text-ink">{m.name}</b><span className="tabular text-xs text-muted">{m.noreg}</span></span>
+                          <span><b className="flex items-center gap-1.5 font-semibold text-ink">{m.name}<AccountMark a={acc.get(m.id)} /></b><span className="tabular text-xs text-muted">{m.noreg}</span></span>
                         </Link>
                       </td>
                       <td className="px-3">{pos[m.positionId]}</td>
@@ -117,7 +122,7 @@ export default function MembersPage() {
                     <Link href={`/members/${m.id}`} className="flex min-w-0 flex-1 items-center gap-3">
                       <Avatar name={m.name} photoUrl={m.photoUrl} size={40} />
                       <span className="min-w-0">
-                        <b className="block truncate">{m.name}</b>
+                        <b className="flex items-center gap-1.5"><span className="truncate">{m.name}</span><AccountMark a={acc.get(m.id)} /></b>
                         <span className="block truncate text-xs text-muted">{pos[m.positionId]} · {m.noreg}</span>
                       </span>
                     </Link>

@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import {
   groupWorkdays, memberWorkdays, performance, tenure, dueLabel, daysLeft,
   isMultiSkill, overallLevel, backupCount, displayStatus, monthEnd, addMonths, contractKind, contractEndFor,
+  isMemberLogin, nextFailState, LOCK_MS,
 } from "./rules.ts";
 
 const WD = [1, 2, 3, 4, 5];
@@ -60,4 +61,14 @@ test("contract length", () => {
 test("plan status", () => {
   assert.equal(displayStatus({ status: "IN_PROGRESS", dueDate: "2026-09-01" }, "2026-09-10"), "OVERDUE");
   assert.equal(displayStatus({ status: "ACHIEVED", dueDate: "2026-09-01" }, "2026-09-10"), "ACHIEVED");
+});
+
+test("member login & lockout", () => {
+  assert.equal(isMemberLogin("1234567"), true);
+  assert.equal(isMemberLogin(" 1234567 "), true);
+  assert.equal(isMemberLogin("123456"), false);
+  assert.equal(isMemberLogin("12345678"), false);
+  assert.equal(isMemberLogin("leader"), false);
+  assert.deepEqual(nextFailState(3, 0), { failed: 4, lockedUntil: null });
+  assert.deepEqual(nextFailState(4, 1000), { failed: 0, lockedUntil: 1000 + LOCK_MS });
 });

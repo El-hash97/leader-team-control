@@ -8,6 +8,7 @@ import { daysLeft, displayStatus, dueLabel, monthOf, shiftMonth, tenure } from "
 import { fmtDate, fmtMonth } from "@/lib/format";
 import { Avatar, Badge, Button, Card, CardHeader, EmptyState, KelasBadge, LEVEL_TEXT, PerfValue, SkillDot } from "@/components/ui";
 import { MemberDialog } from "@/components/member-dialog";
+import { AccountCard } from "@/components/account-card";
 import { PLAN_STATUS } from "@/components/plan-meta";
 
 export default function MemberDetailPage() {
@@ -155,6 +156,8 @@ export default function MemberDetailPage() {
             </tbody>
           </table>
         </Card>
+
+        <AccountCard memberId={m.id} memberName={m.name} active={m.active} />
       </div>
 
       <MemberDialog open={edit} member={m} onClose={() => setEdit(false)} />
