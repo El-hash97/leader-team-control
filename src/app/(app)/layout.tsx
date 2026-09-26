@@ -1,13 +1,18 @@
+import { redirect } from "next/navigation";
 import { StoreProvider } from "@/lib/store";
 import { AppShell } from "@/components/shell";
+import { isAuthed } from "@/lib/server/session";
+import { loadTables } from "@/lib/server/db";
+import { toState } from "@/lib/db-map";
 
-// Mock data depends on today's date (Asia/Jakarta). Render per request so the
-// server HTML matches the browser instead of freezing the build date.
+// Reads the session cookie and live data on every request.
 export const dynamic = "force-dynamic";
 
-export default function AppLayout({ children }: LayoutProps<"/">) {
+export default async function AppLayout({ children }: LayoutProps<"/">) {
+  if (!(await isAuthed())) redirect("/login");
+  const initial = toState(await loadTables());
   return (
-    <StoreProvider>
+    <StoreProvider initial={initial}>
       <AppShell>{children}</AppShell>
     </StoreProvider>
   );

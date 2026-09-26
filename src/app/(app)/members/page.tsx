@@ -5,7 +5,7 @@ import { Award, BadgeCheck, FileClock, GraduationCap, Pencil, Plus, Search, User
 import { useStore } from "@/lib/store";
 import { daysLeft, dueLabel, tenure } from "@/lib/rules";
 import { fmtDate } from "@/lib/format";
-import type { Member } from "@/lib/mock";
+import type { Member } from "@/lib/types";
 import { Avatar, Badge, Button, Card, Dialog, EmptyState, KelasBadge, PageHeader, Stat, cn, inputCls } from "@/components/ui";
 import { MemberDialog } from "@/components/member-dialog";
 

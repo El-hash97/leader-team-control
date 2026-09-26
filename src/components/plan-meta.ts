@@ -1,5 +1,5 @@
 import type { PlanStatus } from "@/lib/rules";
-import type { PlanMethod } from "@/lib/mock";
+import type { PlanMethod } from "@/lib/types";
 
 type Tone = "neutral" | "good" | "warn" | "bad" | "info";
 

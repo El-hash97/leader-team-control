@@ -2,7 +2,7 @@
 
 Web app for team leaders to monitor member skills per process (Toyota 1/4–4/4 skill map), plan skill upgrades for QCC activities, and control daily attendance.
 
-> **UI preview.** All data is generated sample data held in memory (`src/lib/mock.ts`). Refreshing the page resets it. No backend is connected yet.
+Data lives in Supabase (Postgres). All reads and writes go through Next.js server code with the Supabase secret key; RLS is enabled with no policies, so the database is closed to public clients. Login is a single leader account checked on the server (httpOnly signed session cookie).
 
 ## Features
 
@@ -21,12 +21,14 @@ Next.js (App Router) · TypeScript · Tailwind CSS · lucide-react
 
 ## Run
 
+Copy `.env.example` to `.env.local` and fill in the Supabase URL, the Supabase secret key (`sb_secret_...`), the leader username/password, and a random `SESSION_SECRET` (32+ characters). Then:
+
 ```bash
 pnpm install
 pnpm dev
 ```
 
-Open http://localhost:3000 and sign in with any value (preview mode).
+Open http://localhost:3000 and sign in with the leader account from `.env.local`.
 
 ```bash
 pnpm test        # business rules (node --test)

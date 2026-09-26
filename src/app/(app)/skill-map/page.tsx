@@ -26,7 +26,8 @@ export default function SkillMapPage() {
   };
   const selMember = sel && s.members.find((m) => m.id === sel.memberId);
   const selProcess = sel && s.processes.find((p) => p.id === sel.processId);
-  const cur = sel ? s.skills[sel.memberId]?.[sel.processId] : null;
+  // no skill_levels row yet = level 0, no target
+  const cur = sel ? s.skills[sel.memberId]?.[sel.processId] ?? { level: 0, target: null } : null;
 
   function save() {
     if (!sel || !cur) return;

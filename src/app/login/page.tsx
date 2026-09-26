@@ -14,17 +14,13 @@ import { useGSAP } from "@gsap/react";
 import { SplitText } from "gsap/SplitText";
 import { DrawSVGPlugin } from "gsap/DrawSVGPlugin";
 import { LtcMark, MARK_ARCS } from "@/components/ltc-mark";
-import { AUTH_KEY } from "@/lib/store";
+import { login } from "@/app/actions";
 import { cn } from "@/components/ui";
 
 gsap.registerPlugin(useGSAP, SplitText, DrawSVGPlugin);
 
 const display = Instrument_Serif({ weight: "400", subsets: ["latin"], variable: "--font-instrument", display: "swap" });
 const ui = Manrope({ subsets: ["latin"], variable: "--font-manrope", display: "swap" });
-
-// ponytail: client-side demo gate for the mock preview. Real auth = Better Auth (PRD F-101).
-const DEMO_USER = "finishing";
-const DEMO_PASS = "toyota@1";
 
 const LADDER = ["Belum", "Paham teori", "Dibantu", "Mandiri", "Mengajar"];
 
@@ -88,7 +84,6 @@ export default function LoginPage() {
 
   function succeed(form: HTMLFormElement) {
     setStatus("success");
-    try { sessionStorage.setItem(AUTH_KEY, "1"); } catch {}
     const go = () => router.push("/dashboard");
     if (reduced()) return go();
     const parts = form.closest("[data-login]")?.querySelectorAll("[data-exit]") ?? [];
@@ -106,8 +101,10 @@ export default function LoginPage() {
     if (!user || !pass) return fail(form, "Isi username dan password.");
     setStatus("loading");
     setError("");
-    // short, honest pause so the state change is perceivable; no network call in preview mode
-    setTimeout(() => (user.toLowerCase() === DEMO_USER && pass === DEMO_PASS ? succeed(form) : fail(form, "Username atau password salah.")), 450);
+    // credentials are checked on the server; it sets an httpOnly session cookie on success
+    login(user, pass)
+      .then((r) => (r.ok ? succeed(form) : fail(form, r.error ?? "Gagal masuk.")))
+      .catch(() => fail(form, "Server tidak bisa dihubungi. Coba lagi."));
   }
 
   const busy = status === "loading" || status === "success";

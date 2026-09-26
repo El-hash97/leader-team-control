@@ -4,7 +4,7 @@ import { CalendarX, Check, ChevronDown, ChevronUp, Database, Download, FileClock
 import { useStore } from "@/lib/store";
 import { fmtDate } from "@/lib/format";
 import { Badge, Button, Card, CardHeader, Dialog, Field, PageHeader, cn, inputCls } from "@/components/ui";
-import { KELAS } from "@/lib/mock";
+import { KELAS } from "@/lib/types";
 import { contractEndFor } from "@/lib/rules";
 
 const EXAMPLE_JOIN = "2026-01-01";
@@ -273,7 +273,7 @@ export default function SettingsPage() {
                 {v1.conflicts.length > 0 && <p className="mt-1 text-warn">{v1.conflicts.length} NoReg sudah ada dan akan dilewati: {v1.conflicts.slice(0, 5).join(", ")}{v1.conflicts.length > 5 ? "…" : ""}</p>}
                 {v1.unknownPositions.length > 0 && <p className="mt-1 text-muted">Posisi baru akan dibuat: {v1.unknownPositions.join(", ")}</p>}
                 <Button variant="primary" disabled className="mt-3" title="Tersedia setelah backend terhubung">Import sekarang</Button>
-                <p className="mt-1 text-xs text-muted">Proses import tersedia setelah backend terhubung. Pratinjau ini hanya membaca file.</p>
+                <p className="mt-1 text-xs text-muted">Import otomatis belum tersedia. Pratinjau ini hanya membaca file untuk mengecek isinya.</p>
               </div>
             ))}
           </div>
@@ -282,7 +282,7 @@ export default function SettingsPage() {
         <Card>
           <CardHeader icon={Info} accent="gray" title="Informasi sistem" />
           <dl className="divide-y divide-line text-sm">
-            {[["Versi", "2.0 · pratinjau UI"], ["Penyimpanan", "Memori browser (pratinjau). Produksi: PostgreSQL"], ["Reminder", `H-${s.settings.reminderDays}`], ["Skala skill", "0, 1/4, 2/4, 3/4, 4/4"]].map(([k, v]) => (
+            {[["Versi", "2.0"], ["Penyimpanan", "Supabase PostgreSQL (Singapore)"], ["Reminder", `H-${s.settings.reminderDays}`], ["Skala skill", "0, 1/4, 2/4, 3/4, 4/4"]].map(([k, v]) => (
               <div key={k} className="flex justify-between gap-4 px-4 py-2.5 sm:px-5"><dt className="text-muted">{k}</dt><dd className="text-right font-medium">{v}</dd></div>
             ))}
           </dl>

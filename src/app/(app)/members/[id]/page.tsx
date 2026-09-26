@@ -18,7 +18,7 @@ export default function MemberDetailPage() {
 
   if (!m) {
     return (
-      <Card><EmptyState title="Member tidak ditemukan" desc="Member ini tidak ada di grup Anda atau sudah dihapus dari data contoh."
+      <Card><EmptyState title="Member tidak ditemukan" desc="Member ini tidak ditemukan di database. Mungkin link-nya sudah tidak berlaku."
         action={<Link href="/members" className="font-semibold text-brand-strong">Kembali ke Data Member</Link>} /></Card>
     );
   }

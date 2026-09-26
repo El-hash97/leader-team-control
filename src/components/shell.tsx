@@ -1,12 +1,13 @@
 "use client";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import { usePathname } from "next/navigation";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   LayoutDashboard, Users, Grid3x3, TrendingUp, GraduationCap, CalendarCheck, ChartColumn, Settings,
-  Bell, Ellipsis, LogOut, RotateCcw, X, type LucideIcon,
+  Bell, CloudUpload, Ellipsis, LogOut, X, type LucideIcon,
 } from "lucide-react";
-import { AUTH_KEY, useStore } from "@/lib/store";
+import { useStore } from "@/lib/store";
+import { logout } from "@/app/actions";
 import { LtcMark } from "./ltc-mark";
 import { dueLabel } from "@/lib/rules";
 import { accentChip, cn, type Accent } from "./ui";
@@ -75,23 +76,11 @@ function Notifications() {
   );
 }
 
-// sessionStorage never changes while a page is open, so there is nothing to subscribe to
-const noSubscribe = () => () => {};
-const readAuth = () => { try { return sessionStorage.getItem(AUTH_KEY) === "1"; } catch { return false; } };
-const logout = () => { try { sessionStorage.removeItem(AUTH_KEY); } catch {} };
-
 export function AppShell({ children }: { children: ReactNode }) {
   const path = usePathname();
-  const router = useRouter();
-  // null on the server, then the real value in the browser
-  const authed = useSyncExternalStore(noSubscribe, readAuth, () => null);
-  useEffect(() => { if (authed === false) router.replace("/login"); }, [authed, router]);
-  const { toasts, resetDemo, toast } = useStore();
+  const { toasts, saving } = useStore();
   const [more, setMore] = useState(false);
   const active = (href: string) => path === href || path.startsWith(`${href}/`);
-
-  // not signed in (or not known yet): show nothing until the redirect to /login happens
-  if (authed !== true) return <div className="min-h-dvh bg-canvas" aria-busy="true" />;
 
   return (
     <div className="min-h-dvh lg:grid lg:grid-cols-[248px_1fr]">
@@ -99,7 +88,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       {/* Desktop sidebar: own white top bar with the logo */}
       <aside className="sticky top-0 hidden h-dvh flex-col border-r border-line bg-white lg:flex">
-        <Link href="/dashboard" className="flex h-[5.5rem] shrink-0 items-center border-b border-line px-6" aria-label="Leader Team Control, ke Dashboard">
+        <Link href="/dashboard" className="flex h-16 shrink-0 items-center border-b border-line px-6" aria-label="Leader Team Control, ke Dashboard">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/toyota-logo.png" alt="Toyota" width={640} height={120} className="h-[26px] w-auto" />
         </Link>
@@ -119,10 +108,9 @@ export function AppShell({ children }: { children: ReactNode }) {
           })}
         </nav>
         <div className="space-y-1 border-t border-line p-3">
-          <button onClick={() => { resetDemo(); toast("Data contoh dikembalikan ke awal."); }} className="flex min-h-10 w-full items-center gap-3 rounded-md px-3 text-sm text-muted hover:bg-soft">
-            <RotateCcw size={16} />Reset data contoh
-          </button>
-          <Link href="/login" onClick={logout} className="flex min-h-10 items-center gap-3 rounded-md px-3 text-sm text-muted hover:bg-soft"><LogOut size={16} />Keluar</Link>
+          <form action={logout}>
+            <button type="submit" className="flex min-h-10 w-full items-center gap-3 rounded-md px-3 text-sm text-muted hover:bg-soft"><LogOut size={16} />Keluar</button>
+          </form>
         </div>
       </aside>
 
@@ -137,15 +125,13 @@ export function AppShell({ children }: { children: ReactNode }) {
             </span>
           </Link>
           <div className="flex shrink-0 items-center gap-1">
+            {saving && <span role="status" className="hidden items-center gap-1.5 text-xs text-[#ffe1e5] sm:flex"><CloudUpload size={15} />Menyimpan…</span>}
             <Notifications />
             <div className="ml-1 hidden items-center gap-2 py-1 pl-1 pr-1 sm:flex">
               <span className="grid size-9 place-items-center rounded-full bg-white text-sm font-bold text-brand-strong">L</span>
               <span className="text-sm leading-tight"><b className="block">Leader</b><span className="text-xs text-[#ffe1e5]">TL / GL</span></span>
             </div>
           </div>
-        </div>
-        <div className="bg-[#9e0015] px-4 py-1 text-center text-[11px] font-medium text-[#ffe1e5] sm:text-xs">
-          Pratinjau UI: semua nama, angka, dan proses adalah data contoh.
         </div>
       </header>
 
@@ -186,8 +172,9 @@ export function AppShell({ children }: { children: ReactNode }) {
                 </Link>
               ))}
               <div className="my-2 border-t border-line" />
-              <button onClick={() => { resetDemo(); toast("Data contoh dikembalikan ke awal."); setMore(false); }} className="flex min-h-12 items-center gap-3 rounded-md px-3 text-[15px] text-muted hover:bg-soft"><RotateCcw size={18} />Reset data contoh</button>
-              <Link href="/login" onClick={() => { logout(); setMore(false); }} className="flex min-h-12 items-center gap-3 rounded-md px-3 text-[15px] text-muted hover:bg-soft"><LogOut size={18} />Keluar</Link>
+              <form action={logout}>
+                <button type="submit" className="flex min-h-12 w-full items-center gap-3 rounded-md px-3 text-[15px] text-muted hover:bg-soft"><LogOut size={18} />Keluar</button>
+              </form>
             </nav>
           </div>
         </div>

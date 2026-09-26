@@ -5,7 +5,7 @@ import { Lightbulb, Plus, TrendingUp } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { addDays, daysLeft, diffDays, displayStatus, dueLabel, monthEnd, monthOf, monthStart, shiftMonth, type PlanStatus } from "@/lib/rules";
 import { fmtDate, fmtMonthShort } from "@/lib/format";
-import type { Plan, PlanMethod } from "@/lib/mock";
+import type { Plan, PlanMethod } from "@/lib/types";
 import { Badge, Button, Card, CardHeader, Dialog, EmptyState, Field, LEVEL_TEXT, PageHeader, Segmented, SkillDot, cn, inputCls } from "@/components/ui";
 import { PLAN_METHOD, PLAN_STATUS } from "@/components/plan-meta";
 

@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Camera } from "lucide-react";
 import { useStore } from "@/lib/store";
-import { KELAS, type Kelas, type Member } from "@/lib/mock";
+import { KELAS, type Kelas, type Member } from "@/lib/types";
 import { contractEndFor, contractKind, contractMonthsFor } from "@/lib/rules";
 import { Avatar, Button, Dialog, Field, inputCls } from "./ui";
 
