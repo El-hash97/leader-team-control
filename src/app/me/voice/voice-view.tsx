@@ -7,24 +7,10 @@ import { Sheet } from "@/components/member-ui";
 import { mButtonDark, mCard } from "@/components/member-style";
 import { VOICE_CATEGORIES, VOICE_CATEGORY, VOICE_STATUS, type VoiceCategory } from "@/components/voice-meta";
 import { cn } from "@/components/ui";
+import { compressVoicePhoto } from "@/lib/image";
 
 const dt = new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta" });
 const STATUS_CHIP = { SENT: "bg-m-low text-m-sub", READ: "bg-m-sky-soft text-[#1d4a8c]", REPLIED: "bg-[#dcf5ea] text-[#0b6b47]" } as const;
-
-/** Resize to ≤1280 px and re-encode as JPEG until it fits ~300 KB (F-1301). Re-encoding also strips anything that is not pixels. */
-async function compressPhoto(file: File): Promise<string> {
-  const img = await createImageBitmap(file);
-  const scale = Math.min(1, 1280 / Math.max(img.width, img.height));
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.round(img.width * scale);
-  canvas.height = Math.round(img.height * scale);
-  canvas.getContext("2d")!.drawImage(img, 0, 0, canvas.width, canvas.height);
-  for (let q = 0.82; q >= 0.4; q -= 0.14) {
-    const url = canvas.toDataURL("image/jpeg", q);
-    if (url.length <= 400_000) return url;
-  }
-  throw new Error("too big");
-}
 
 export function VoiceView({ voices, processes }: { voices: MemberVoice[]; processes: { id: string; name: string }[] }) {
   const router = useRouter();
@@ -120,7 +106,7 @@ function VoiceForm({ processes, onDone }: { processes: { id: string; name: strin
   async function pick(file: File | undefined) {
     if (!file) return;
     if (!file.type.startsWith("image/")) return setError("File harus berupa foto.");
-    try { setPhoto(await compressPhoto(file)); setError(""); } catch { setError("Foto tidak bisa diproses. Coba foto lain."); }
+    try { setPhoto(await compressVoicePhoto(file)); setError(""); } catch { setError("Foto tidak bisa diproses. Coba foto lain."); }
   }
 
   async function submit(e: FormEvent) {

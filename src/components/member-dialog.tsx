@@ -4,6 +4,7 @@ import { Camera } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { KELAS, type Kelas, type Member } from "@/lib/types";
 import { contractEndFor, contractKind, contractMonthsFor } from "@/lib/rules";
+import { compressAvatar } from "@/lib/image";
 import { Avatar, Button, Dialog, Field, inputCls } from "./ui";
 
 type Errors = Partial<Record<"name" | "noreg" | "kelas" | "joinDate" | "contractEnd" | "photo", string>>;
@@ -63,15 +64,23 @@ export function MemberDialog({ open, member, onClose }: { open: boolean; member:
           <div>
             <label className="inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-md border border-line px-3 text-sm font-semibold hover:bg-soft">
               <Camera size={16} />{f.photoUrl ? "Ganti foto" : "Unggah foto"}
-              <input type="file" accept="image/*" className="sr-only" onChange={(e) => {
+              <input type="file" accept="image/*" className="sr-only" onChange={async (e) => {
                 const file = e.target.files?.[0];
+                e.target.value = ""; // picking the same file again must fire onChange
                 if (!file) return;
-                if (file.size > 2 * 1024 * 1024) return setErrors((x) => ({ ...x, photo: "Ukuran foto maksimal 2 MB." }));
-                setErrors((x) => ({ ...x, photo: undefined }));
-                set("photoUrl", URL.createObjectURL(file));
+                if (!file.type.startsWith("image/")) return setErrors((x) => ({ ...x, photo: "File harus berupa foto (JPG/PNG)." }));
+                if (file.size > 10 * 1024 * 1024) return setErrors((x) => ({ ...x, photo: "Ukuran foto maksimal 10 MB." }));
+                // Stored in the DB as a small JPEG data URL, so it survives reloads and shows on the member portal.
+                // (A blob: URL only lives in this browser tab.)
+                try {
+                  set("photoUrl", await compressAvatar(file));
+                  setErrors((x) => ({ ...x, photo: undefined }));
+                } catch {
+                  setErrors((x) => ({ ...x, photo: "Foto tidak bisa diproses. Coba foto lain." }));
+                }
               }} />
             </label>
-            <p className={errors.photo ? "mt-1 text-xs font-medium text-brand-strong" : "mt-1 text-xs text-muted"}>{errors.photo ?? "JPG/PNG, maksimal 2 MB."}</p>
+            <p className={errors.photo ? "mt-1 text-xs font-medium text-brand-strong" : "mt-1 text-xs text-muted"}>{errors.photo ?? "JPG/PNG. Otomatis diperkecil."}</p>
           </div>
         </div>
         <Field label="Nama member *" error={errors.name}>
