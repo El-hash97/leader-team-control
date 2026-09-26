@@ -88,10 +88,10 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       {/* Desktop sidebar: own white top bar with the logo */}
       <aside className="sticky top-0 hidden h-dvh flex-col border-r border-line bg-white lg:flex">
-        <Link href="/dashboard" className="flex shrink-0 flex-col justify-center gap-1.5 border-b border-line px-6 py-4" aria-label="Leader Team Control, ke Dashboard">
+        <Link href="/dashboard" className="flex shrink-0 flex-col items-start justify-center gap-1.5 border-b border-line px-6 py-4" aria-label="Leader Team Control, ke Dashboard">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/toyota-logo.png" alt="Toyota" width={640} height={120} className="h-[24px] w-auto" />
-          <span className="text-[11px] font-semibold uppercase tracking-wide text-muted">Finishing Line – Casting Division</span>
+          <img src="/toyota-logo.png" alt="Toyota" width={640} height={120} className="h-[26px] w-auto" />
+          <span className="text-xs text-muted">Finishing Line – Casting Division</span>
         </Link>
         <nav aria-label="Menu utama" className="flex-1 space-y-0.5 overflow-y-auto px-3 py-4">
           {NAV.map(({ href, label, icon: Icon, accent }) => {
@@ -167,10 +167,10 @@ export function AppShell({ children }: { children: ReactNode }) {
           <button aria-label="Tutup menu" className="absolute inset-0 bg-black/45" onClick={() => setMore(false)} />
           <div className="absolute inset-x-0 bottom-0 rounded-t-xl bg-white pb-[env(safe-area-inset-bottom)]">
             <div className="flex items-center justify-between border-b border-line px-4 py-3">
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col items-start gap-1">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src="/toyota-logo.png" alt="Toyota" width={640} height={120} className="h-5 w-auto" />
-                <span className="text-[10px] font-semibold uppercase tracking-wide text-muted">Finishing Line – Casting Division</span>
+                <span className="text-[11px] text-muted">Finishing Line – Casting Division</span>
               </div>
               <button onClick={() => setMore(false)} aria-label="Tutup" className="grid size-11 place-items-center text-muted"><X size={20} /></button>
             </div>
