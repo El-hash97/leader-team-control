@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, type ButtonHTMLAttributes, type ReactNode } from "react";
 import { X, type LucideIcon } from "lucide-react";
+import { LEVEL_TEXT } from "./plan-meta";
 
 export const cn = (...c: (string | number | false | null | undefined)[]) => c.filter(Boolean).join(" ");
 
@@ -134,7 +135,7 @@ export function SkillDot({ level, target, size = 22 }: { level: number; target?:
   );
 }
 
-export const LEVEL_TEXT = ["Belum", "Paham teori", "Dengan bantuan", "Mandiri", "Bisa mengajar"];
+export { LEVEL_TEXT };
 
 export function SkillLegend() {
   return (

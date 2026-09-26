@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import {
   groupWorkdays, memberWorkdays, performance, tenure, dueLabel, daysLeft,
   isMultiSkill, overallLevel, backupCount, displayStatus, monthEnd, addMonths, contractKind, contractEndFor,
-  isMemberLogin, nextFailState, LOCK_MS,
+  isMemberLogin, nextFailState, LOCK_MS, trainingAlert, attendanceSummary,
 } from "./rules.ts";
 
 const WD = [1, 2, 3, 4, 5];
@@ -71,4 +71,15 @@ test("member login & lockout", () => {
   assert.equal(isMemberLogin("leader"), false);
   assert.deepEqual(nextFailState(3, 0), { failed: 4, lockedUntil: null });
   assert.deepEqual(nextFailState(4, 1000), { failed: 0, lockedUntil: 1000 + LOCK_MS });
+});
+
+test("member portal: training alert & attendance summary", () => {
+  assert.equal(trainingAlert(null, "2026-09-27", 90), null);
+  assert.equal(trainingAlert("2026-09-26", "2026-09-27", 90), "expired");
+  assert.equal(trainingAlert("2026-12-26", "2026-09-27", 90), "soon");
+  assert.equal(trainingAlert("2027-06-01", "2026-09-27", 90), null);
+  const s = attendanceSummary([{ category: "FULFILLED" }, { category: "FULFILLED" }, { category: "SICK" }]);
+  assert.equal(s.FULFILLED, 2);
+  assert.equal(s.SICK, 1);
+  assert.equal(s.LEAVE, 0);
 });

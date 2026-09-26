@@ -1,60 +1,124 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
-import { requireMember } from "@/lib/server/member";
-import { tenure, todayJakarta } from "@/lib/rules";
-import { fmtDate } from "@/lib/format";
-import { Avatar } from "@/components/ui";
+import { Award, CalendarDays, ChevronRight, TrendingUp } from "lucide-react";
+import { loadPortal, requireMember } from "@/lib/server/member";
+import { attendanceSummary, countAtLeast, trainingAlert, type AttCategory } from "@/lib/rules";
+import { fmtDate, fmtMonth } from "@/lib/format";
+import { Avatar, SkillDot } from "@/components/ui";
 import { MemberHeader } from "@/components/member-ui";
 import { mCard } from "@/components/member-style";
+import { DueLine } from "@/components/member-parts";
 
-// F-1201 (phase 1 slice): greeting + profile summary. Skill, plans, training and attendance cards land in phase 2.
+const ATT: [AttCategory, string, string][] = [
+  ["FULFILLED", "Hadir", "bg-[#dcf5ea] text-[#0b6b47]"],
+  ["LEAVE", "Cuti", "bg-m-sky-soft text-[#1d4a8c]"],
+  ["SICK", "Sakit", "bg-m-amber-soft text-[#7a4a00]"],
+  ["PERMIT", "Izin", "bg-m-low text-m-text"],
+];
+
+// F-1201 greeting + summary cards, F-1206 attendance recap. Ref: beranda-me.html.
 export default async function MemberHome() {
   const me = await requireMember();
   if (!me) redirect("/login");
-  const today = todayJakarta();
+  const p = await loadPortal(me.id);
+
+  const levels = Object.fromEntries(p.processes.map((x) => [x.id, x.cell.level]));
+  const ids = p.processes.map((x) => x.id);
+  const mastered = countAtLeast(levels, ids, 3);
+  const pct = ids.length ? Math.round((mastered / ids.length) * 100) : 0;
+  const running = p.plans.filter((x) => x.status !== "ACHIEVED");
+  const plan = running[0];
+  const alerts = p.trainings.filter((t) => trainingAlert(t.expiresAt, p.today, p.reminderDays));
+  const train = alerts[0];
+  const sum = attendanceSummary(p.attendance);
+  const offDays = p.attendance.filter((a) => a.category !== "FULFILLED");
+  const extra = sum.ABSENT + sum.OTHER;
 
   return (
     <>
       <MemberHeader title="Beranda" />
 
       <section className="flex items-center gap-4">
-        <span className="rounded-full ring-4 ring-white shadow-sm"><Avatar name={me.name} photoUrl={me.photoUrl} size={64} /></span>
+        <span className="shrink-0 rounded-full shadow-sm ring-4 ring-white"><Avatar name={me.name} photoUrl={me.photoUrl} size={64} /></span>
         <div className="min-w-0">
           <p className="text-[12px] font-medium text-m-sub">Selamat datang,</p>
           <h2 className="line-clamp-2 text-xl font-bold leading-tight tracking-tight">{me.name}</h2>
-          <p className="mt-0.5 text-[13px] text-m-sub">{me.position}</p>
-          <p className="text-[13px] text-m-sub">NoReg <span className="tabular-nums">{me.noreg}</span></p>
+          <p className="mt-0.5 text-[13px] text-m-sub">{me.position} · NoReg <span className="tabular-nums">{me.noreg}</span></p>
         </div>
       </section>
 
-      <section className="relative mt-5 overflow-hidden rounded-[26px] bg-brand p-6 text-white shadow-[0_12px_28px_-8px_rgba(200,0,26,0.45)]">
+      <Link href="/me/skill" className="relative mt-5 block overflow-hidden rounded-[26px] bg-brand p-6 text-white shadow-[0_12px_28px_-8px_rgba(200,0,26,0.45)] transition active:scale-[0.99]">
         <div aria-hidden className="pointer-events-none absolute -bottom-10 -right-8 size-36 rounded-full bg-white/15 blur-sm" />
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1 text-[11px] font-semibold">
-          <span className="size-1.5 rounded-full bg-white" />Profil dari Team Leader
-        </span>
-        <h3 className="mt-3 text-xl font-bold tracking-tight">{me.status || "Member"}{me.kelas ? ` · Kelas ${me.kelas}` : ""}</h3>
-        <div className="relative mt-5 grid grid-cols-2 gap-2">
-          <div className="rounded-[18px] bg-white/95 p-4 text-m-text">
-            <p className="text-[11px] font-medium text-m-sub">Masa kerja</p>
-            <p className="mt-0.5 text-base font-bold">{tenure(me.joinDate, today)}</p>
-            <p className="mt-1 text-[11px] text-m-sub">Masuk {fmtDate(me.joinDate)}</p>
-          </div>
-          <div className="rounded-[18px] bg-white/95 p-4 text-m-text">
-            <p className="text-[11px] font-medium text-m-sub">{me.contractEnd ? "Akhir kontrak" : "Posisi"}</p>
-            <p className="mt-0.5 text-base font-bold">{me.contractEnd ? fmtDate(me.contractEnd) : me.position || "-"}</p>
-            <p className="mt-1 text-[11px] text-m-sub">Finishing Line</p>
-          </div>
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1 text-[11px] font-semibold"><span className="size-1.5 rounded-full bg-white" />Ringkasan keahlian</span>
+        <h3 className="mt-3 text-[22px] font-bold leading-tight tracking-tight">{mastered} dari {ids.length} proses dikuasai</h3>
+        <p className="text-[12px] text-white/85">Level 3/4 (mandiri) ke atas</p>
+        <div className="relative mt-4">
+          <div className="flex justify-between text-[12px] font-semibold"><span>Kemajuan multi-skill</span><span>{pct}%</span></div>
+          <div className="mt-1.5 h-3 rounded-full bg-white/30 p-0.5"><div className="h-full rounded-full bg-white" style={{ width: `${pct}%` }} /></div>
+          <p className="mt-2.5 flex items-center gap-1.5 text-[12px] font-medium"><TrendingUp size={15} aria-hidden />{running.length ? `${running.length} rencana peningkatan berjalan` : "Belum ada rencana peningkatan berjalan"}</p>
         </div>
+      </Link>
+
+      <section className="mt-4 grid grid-cols-2 gap-3.5">
+        <Link href="/me/skill#rencana" className="flex min-h-[176px] flex-col justify-between rounded-[26px] bg-m-amber p-[18px] shadow-[0_8px_24px_-4px_rgba(18,19,26,0.06)] transition active:scale-[0.98]">
+          <div>
+            <span className="inline-flex rounded-[14px] bg-white/60 px-2.5 py-0.5 text-[10px] font-bold">Rencana peningkatan</span>
+            {plan ? (
+              <>
+                <h4 className="mt-2.5 text-[15px] font-bold leading-tight">{plan.processName}</h4>
+                <p className="mt-2 flex items-center gap-1 text-[12px] font-bold"><SkillDot level={plan.fromLevel} size={16} />{plan.fromLevel}/4 → <SkillDot level={plan.targetLevel} size={16} />{plan.targetLevel}/4</p>
+              </>
+            ) : <p className="mt-2.5 text-[13px] font-semibold leading-snug">Belum ada rencana aktif</p>}
+          </div>
+          {plan && (
+            <div className="text-[11px] leading-tight">
+              <p className="text-m-text/80">Mentor: {plan.mentorName ?? "-"}</p>
+              <p className="mt-0.5 font-bold"><DueLine due={plan.dueDate} today={p.today} /></p>
+            </div>
+          )}
+        </Link>
+
+        <Link href="/me/skill#training" className="flex min-h-[176px] flex-col justify-between rounded-[26px] bg-m-sky p-[18px] shadow-[0_8px_24px_-4px_rgba(18,19,26,0.06)] transition active:scale-[0.98]">
+          <div>
+            <span className="inline-flex rounded-[14px] bg-white/60 px-2.5 py-0.5 text-[10px] font-bold">Training</span>
+            {train ? (
+              <>
+                <h4 className="mt-2.5 text-[15px] font-bold leading-tight">{train.name}</h4>
+                <span className="mt-2 inline-flex items-center gap-1 rounded-xl bg-m-red-fixed px-2 py-0.5 text-[10px] font-bold text-brand-strong">
+                  {trainingAlert(train.expiresAt, p.today, p.reminderDays) === "expired" ? "Kedaluwarsa" : "Segera diperbarui"}
+                </span>
+              </>
+            ) : (
+              <p className="mt-2.5 flex items-start gap-1.5 text-[13px] font-semibold leading-snug"><Award size={16} className="mt-px shrink-0" aria-hidden />{p.trainings.length ? "Semua training masih berlaku" : "Belum ada training dicatat"}</p>
+            )}
+          </div>
+          <p className="text-[11px] font-bold leading-tight">{train ? `Berlaku s/d ${fmtDate(train.expiresAt)}` : `${p.trainings.length} training tercatat`}{alerts.length > 1 ? ` · +${alerts.length - 1} lainnya` : ""}</p>
+        </Link>
       </section>
 
-      <section className={`${mCard} mt-4 p-5`}>
-        <h3 className="text-base font-bold">Segera hadir di portal ini</h3>
-        <ul className="mt-3 grid grid-cols-2 gap-2 text-[13px] font-semibold">
-          <li className="rounded-[18px] bg-m-amber-soft px-4 py-3">Skill map &amp; target</li>
-          <li className="rounded-[18px] bg-m-sky-soft px-4 py-3">Rencana &amp; training</li>
-          <li className="rounded-[18px] bg-m-red-fixed px-4 py-3">Voice ke leader</li>
-          <li className="rounded-[18px] bg-m-low px-4 py-3">Pengajuan cuti</li>
-        </ul>
-        <p className="mt-3 text-[12px] text-m-sub">Data profil dikelola Team Leader. Ada yang salah? Sampaikan langsung ke leader.</p>
+      <section className={`${mCard} mt-4 p-[18px]`}>
+        <div className="flex items-center gap-2">
+          <CalendarDays size={19} className="text-brand" aria-hidden />
+          <h4 className="text-base font-bold">Rekap absensi {fmtMonth(p.month)}</h4>
+        </div>
+        <div className="mt-3 grid grid-cols-4 gap-2">
+          {ATT.map(([cat, label, cls]) => (
+            <div key={cat} className={`flex flex-col items-center rounded-[18px] px-1 py-2.5 ${cls}`}>
+              <span className="text-[11px] font-medium">{label}</span>
+              <b className="mt-0.5 text-xl leading-tight">{sum[cat]}</b>
+              <span className="text-[10px]">hari</span>
+            </div>
+          ))}
+        </div>
+        {extra > 0 && <p className="mt-2 text-[12px] font-semibold text-brand-strong">Mangkir/lainnya: {extra} hari</p>}
+        {offDays.length > 0 ? (
+          <details className="mt-2">
+            <summary className="flex min-h-10 items-center gap-1 text-[12px] font-semibold text-m-sub"><ChevronRight size={14} aria-hidden />Lihat tanggal tidak hadir ({offDays.length})</summary>
+            <ul className="mt-1 divide-y divide-m-low text-[13px]">
+              {offDays.map((a) => <li key={a.date} className="flex justify-between py-2"><span>{fmtDate(a.date)}</span><span className="font-semibold">{a.statusName}</span></li>)}
+            </ul>
+          </details>
+        ) : p.attendance.length === 0 && <p className="mt-2 text-[12px] text-m-sub">Belum ada absensi tercatat bulan ini.</p>}
       </section>
     </>
   );

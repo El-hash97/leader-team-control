@@ -149,3 +149,17 @@ export function nextFailState(failed: number, now: number): { failed: number; lo
   const n = failed + 1;
   return n >= MAX_FAILS ? { failed: 0, lockedUntil: now + LOCK_MS } : { failed: n, lockedUntil: null };
 }
+
+// PRD v3 F-1205: same reminder window as the leader views
+export function trainingAlert(expiresAt: ISODate | null, today: ISODate, reminderDays: number): "expired" | "soon" | null {
+  if (!expiresAt) return null;
+  const d = daysLeft(expiresAt, today);
+  return d < 0 ? "expired" : d <= reminderDays ? "soon" : null;
+}
+
+// PRD v3 F-1206: day count per attendance category for one member
+export function attendanceSummary(records: { category: AttCategory }[]): Record<AttCategory, number> {
+  const out: Record<AttCategory, number> = { FULFILLED: 0, SICK: 0, LEAVE: 0, PERMIT: 0, ABSENT: 0, OTHER: 0 };
+  for (const r of records) out[r.category]++;
+  return out;
+}

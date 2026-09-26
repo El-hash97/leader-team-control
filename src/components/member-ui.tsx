@@ -23,11 +23,11 @@ export function MemberHeader({ title, right }: { title: string; right?: ReactNod
   );
 }
 
-type Tab = { href: "/me" | "/me/akun" | null; label: string; icon: LucideIcon };
-// Skill, Voice and Cuti arrive in PRD v3 phases 2–3; shown now so the dock does not reshuffle later.
+type Tab = { href: "/me" | "/me/skill" | "/me/akun" | null; label: string; icon: LucideIcon };
+// Voice and Cuti arrive in PRD v3 phase 3; shown now so the dock does not reshuffle later.
 const TABS: Tab[] = [
   { href: "/me", label: "Beranda", icon: House },
-  { href: null, label: "Skill", icon: GraduationCap },
+  { href: "/me/skill", label: "Skill", icon: GraduationCap },
   { href: null, label: "Voice", icon: MessageCircle },
   { href: null, label: "Cuti", icon: CalendarDays },
   { href: "/me/akun", label: "Akun", icon: CircleUser },

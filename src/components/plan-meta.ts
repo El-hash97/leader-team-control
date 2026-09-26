@@ -1,6 +1,9 @@
 import type { PlanStatus } from "@/lib/rules";
 import type { PlanMethod } from "@/lib/types";
 
+// Toyota skill ladder 0..4. Lives here (not in the "use client" ui.tsx) so server pages can read it too.
+export const LEVEL_TEXT = ["Belum", "Paham teori", "Dengan bantuan", "Mandiri", "Bisa mengajar"];
+
 type Tone = "neutral" | "good" | "warn" | "bad" | "info";
 
 export const PLAN_STATUS: Record<PlanStatus | "OVERDUE", { label: string; tone: Tone; bar: string }> = {
