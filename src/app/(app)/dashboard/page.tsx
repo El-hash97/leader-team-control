@@ -180,7 +180,7 @@ export default function DashboardPage() {
             {backup.map((b) => (
               <li key={b.process.id} className="flex items-center justify-between bg-white px-4 py-2.5 text-sm">
                 <span className="flex items-center gap-2"><SkillDot level={3} size={16} />{b.process.name}</span>
-                <span className={cn("tabular font-semibold", !b.ok && "text-brand-strong")}>{b.count}{!b.ok && " · kurang"}</span>
+                <span className={cn("tabular font-semibold", !b.ok && "text-brand-strong")}>{b.count} {b.ok ? "✓" : "✗"}</span>
               </li>
             ))}
           </ul>
