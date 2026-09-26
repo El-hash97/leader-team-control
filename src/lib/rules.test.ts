@@ -5,6 +5,7 @@ import {
   groupWorkdays, memberWorkdays, performance, tenure, dueLabel, daysLeft,
   isMultiSkill, overallLevel, backupCount, displayStatus, monthEnd, addMonths, contractKind, contractEndFor,
   isMemberLogin, nextFailState, LOCK_MS, trainingAlert, attendanceSummary,
+  workdayList, leaveOverlaps, backupShortfall, voiceStatus,
 } from "./rules.ts";
 
 const WD = [1, 2, 3, 4, 5];
@@ -82,4 +83,19 @@ test("member portal: training alert & attendance summary", () => {
   assert.equal(s.FULFILLED, 2);
   assert.equal(s.SICK, 1);
   assert.equal(s.LEAVE, 0);
+});
+
+test("leave: workdays, overlap, backup shortfall; voice status", () => {
+  assert.deepEqual(workdayList("2026-10-16", "2026-10-19", WD), ["2026-10-16", "2026-10-19"]); // Fri–Mon
+  assert.deepEqual(workdayList("2026-10-16", "2026-10-19", WD, ["2026-10-19"]), ["2026-10-16"]);
+  assert.deepEqual(workdayList("2026-10-19", "2026-10-16", WD), []);
+  assert.equal(leaveOverlaps({ start: "2026-10-01", end: "2026-10-05" }, { start: "2026-10-05", end: "2026-10-09" }), true);
+  assert.equal(leaveOverlaps({ start: "2026-10-01", end: "2026-10-04" }, { start: "2026-10-05", end: "2026-10-09" }), false);
+  const P = [{ id: "deb", name: "Deburring", minBackup: 2 }, { id: "gri", name: "Grinding", minBackup: 2 }];
+  const L = { a: { deb: 3, gri: 1 }, b: { deb: 4 }, c: { deb: 3, gri: 3 } };
+  assert.deepEqual(backupShortfall("a", L, new Set(), P), []); // b + c still cover Deburring; a is no Grinding backup
+  assert.deepEqual(backupShortfall("a", L, new Set(["c"]), P), [{ id: "deb", name: "Deburring", count: 1, min: 2 }]);
+  assert.equal(voiceStatus({ read_at: null, replied_at: null }), "SENT");
+  assert.equal(voiceStatus({ read_at: "x", replied_at: null }), "READ");
+  assert.equal(voiceStatus({ read_at: "x", replied_at: "y" }), "REPLIED");
 });

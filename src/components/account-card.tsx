@@ -1,9 +1,45 @@
 "use client";
 // Leader side of PRD v3 M11: account status per member + activation code (F-1102, §5.6).
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { Check, Copy, KeyRound, Smartphone } from "lucide-react";
+import { Check, Copy, KeyRound, MessagesSquare, Smartphone } from "lucide-react";
 import { createActivationCode, listAccounts, type AccountSummary } from "@/app/actions";
+import { listLeaves, listVoices, type LeaderVoice, type LeaveRow } from "@/app/inbox-actions";
+import { fmtDate } from "@/lib/format";
+import { LEAVE_STATUS, VOICE_CATEGORY, VOICE_STATUS } from "@/components/voice-meta";
 import { Badge, Button, Card, CardHeader, Dialog } from "@/components/ui";
+
+/** PRD v3 §5.6: this member's voices and leave requests on the member detail page. */
+export function MemberInboxCard({ memberId }: { memberId: string }) {
+  const [data, setData] = useState<{ voices: LeaderVoice[]; leaves: LeaveRow[] } | null>(null);
+  useEffect(() => {
+    Promise.all([listVoices(), listLeaves()])
+      .then(([v, l]) => setData({ voices: v.filter((x) => x.memberId === memberId).slice(0, 5), leaves: l.filter((x) => x.memberId === memberId).slice(0, 5) }))
+      .catch(() => setData({ voices: [], leaves: [] }));
+  }, [memberId]);
+  return (
+    <Card>
+      <CardHeader icon={MessagesSquare} accent="red" title="Voice & cuti" desc="5 terakhir dari portal member" />
+      {!data ? <p className="px-5 py-3 text-sm text-muted">Memuat…</p> : (
+        <div className="divide-y divide-line text-sm">
+          {data.voices.map((v) => (
+            <Link key={v.id} href="/voice" className="flex items-start gap-2 px-4 py-2.5 hover:bg-rowhover sm:px-5">
+              <span className="min-w-0 flex-1"><b className="block">{VOICE_CATEGORY[v.category].label}{v.processName ? ` · ${v.processName}` : ""}</b><span className="line-clamp-1 text-muted">{v.body}</span></span>
+              <Badge tone={VOICE_STATUS[v.status].tone}>{VOICE_STATUS[v.status].label}</Badge>
+            </Link>
+          ))}
+          {data.leaves.map((l) => (
+            <Link key={l.id} href="/cuti" className="flex items-center gap-2 px-4 py-2.5 hover:bg-rowhover sm:px-5">
+              <span className="min-w-0 flex-1"><b className="block">{l.typeName} · {l.workdays} hari</b><span className="tabular text-muted">{fmtDate(l.start)}{l.end !== l.start ? ` – ${fmtDate(l.end)}` : ""}</span></span>
+              <Badge tone={LEAVE_STATUS[l.status].tone}>{LEAVE_STATUS[l.status].label}</Badge>
+            </Link>
+          ))}
+          {!data.voices.length && !data.leaves.length && <p className="px-5 py-3 text-muted">Belum ada voice atau pengajuan cuti.</p>}
+        </div>
+      )}
+    </Card>
+  );
+}
 
 const dt = new Intl.DateTimeFormat("id-ID", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta" });
 const fmtTime = (iso: string | null) => (iso ? dt.format(new Date(iso)) : "-");

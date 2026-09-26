@@ -27,7 +27,7 @@ export function toState(t: Tables): State {
   const skills: State["skills"] = {};
   for (const r of t.skill_levels) (skills[r.member_id] ??= {})[r.process_id] = { level: r.level, target: r.target };
   const attendance: State["attendance"] = {};
-  for (const r of t.attendance) attendance[attKey(r.date, r.member_id)] = { statusId: r.status_id, note: r.note };
+  for (const r of t.attendance) attendance[attKey(r.date, r.member_id)] = { statusId: r.status_id, note: r.note, fromLeave: !!r.leave_request_id };
   return {
     positions: t.positions.map((r) => ({ id: r.id, name: r.name, order: r.sort })),
     empStatuses: t.emp_statuses.map((r) => ({ id: r.id, name: r.name, hasContract: r.has_contract })),
@@ -77,7 +77,8 @@ export const planRow = (p: Plan): Row => ({
 });
 export const trainingMasterRow = (t: Training): Row => ({ id: t.id, name: t.name, has_expiry: t.hasExpiry, sort: t.order });
 export const trainingRow = (t: MemberTraining): Row => ({ member_id: t.memberId, training_id: t.trainingId, trained_at: t.trainedAt, expires_at: t.expiresAt });
-export const attRow = (date: string, memberId: string, statusId: string, note: string): Row => ({ member_id: memberId, date, status_id: statusId, note });
+// Any manual write unlinks the row from a leave request, so cancelling that leave later leaves this row alone (PRD v3 F-1406/F-1407).
+export const attRow = (date: string, memberId: string, statusId: string, note: string): Row => ({ member_id: memberId, date, status_id: statusId, note, leave_request_id: null });
 export const snapshotRow = (x: Snapshot): Row => ({ id: x.id, month: x.month, kind: x.kind, multi_skill_rate: x.multiSkillRate, safe_processes: x.safeProcesses });
 export const settingsRow = (s: Settings): Row => ({
   reminder_days: s.reminderDays, multi_skill_min_processes: s.multiSkillMinProcesses, multi_skill_min_level: s.multiSkillMinLevel,

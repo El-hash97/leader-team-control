@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Award, CalendarDays, ChevronRight, TrendingUp } from "lucide-react";
+import { Award, CalendarCheck, CalendarDays, ChevronRight, MessageCircle, TrendingUp } from "lucide-react";
 import { loadPortal, requireMember } from "@/lib/server/member";
 import { attendanceSummary, countAtLeast, trainingAlert, type AttCategory } from "@/lib/rules";
 import { fmtDate, fmtMonth } from "@/lib/format";
@@ -8,6 +8,8 @@ import { Avatar, SkillDot } from "@/components/ui";
 import { MemberHeader } from "@/components/member-ui";
 import { mCard } from "@/components/member-style";
 import { DueLine } from "@/components/member-parts";
+import { myLeaves, myVoices } from "@/app/inbox-actions";
+import { LEAVE_STATUS, VOICE_CATEGORY } from "@/components/voice-meta";
 
 const ATT: [AttCategory, string, string][] = [
   ["FULFILLED", "Hadir", "bg-[#dcf5ea] text-[#0b6b47]"],
@@ -20,7 +22,9 @@ const ATT: [AttCategory, string, string][] = [
 export default async function MemberHome() {
   const me = await requireMember();
   if (!me) redirect("/login");
-  const p = await loadPortal(me.id);
+  const [p, leaves, voices] = await Promise.all([loadPortal(me.id), myLeaves(), myVoices()]);
+  const lastLeave = leaves[0];
+  const reply = voices.find((v) => v.unseen) ?? voices.find((v) => v.reply);
 
   const levels = Object.fromEntries(p.processes.map((x) => [x.id, x.cell.level]));
   const ids = p.processes.map((x) => x.id);
@@ -95,6 +99,30 @@ export default async function MemberHome() {
           <p className="text-[11px] font-bold leading-tight">{train ? `Berlaku s/d ${fmtDate(train.expiresAt)}` : `${p.trainings.length} training tercatat`}{alerts.length > 1 ? ` · +${alerts.length - 1} lainnya` : ""}</p>
         </Link>
       </section>
+
+      <div className="mt-4 space-y-3">
+        <Link href="/me/voice" className={`${mCard} block p-4 transition active:scale-[0.99]`}>
+          <div className="flex items-center justify-between gap-2">
+            <span className="flex items-center gap-2 text-[15px] font-bold"><MessageCircle size={18} className="text-brand" aria-hidden />Voice ke leader</span>
+            {reply?.unseen && <span className="rounded-full bg-m-red-fixed px-2.5 py-1 text-[11px] font-bold text-brand-strong">Balasan baru</span>}
+          </div>
+          {reply ? (
+            <>
+              <p className="mt-2 rounded-2xl bg-m-low px-3 py-2 text-[13px] leading-snug line-clamp-2">&ldquo;{reply.reply}&rdquo;</p>
+              <p className="mt-1.5 text-[12px] text-m-sub">Balasan leader · {VOICE_CATEGORY[reply.category].label}</p>
+            </>
+          ) : <p className="mt-1.5 text-[13px] text-m-sub">{voices.length ? "Belum ada balasan. Leader akan menanggapi." : "Punya saran atau temuan K3? Kirim lewat Voice."}</p>}
+        </Link>
+        <Link href="/me/cuti" className={`${mCard} block p-4 transition active:scale-[0.99]`}>
+          <div className="flex items-center justify-between gap-2">
+            <span className="flex items-center gap-2 text-[15px] font-bold"><CalendarCheck size={18} className="text-brand" aria-hidden />Status cuti terakhir</span>
+            {lastLeave && <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${LEAVE_STATUS[lastLeave.status].chip}`}>{LEAVE_STATUS[lastLeave.status].label}</span>}
+          </div>
+          <p className="mt-1.5 text-[13px] text-m-sub">
+            {lastLeave ? `${lastLeave.typeName} · ${fmtDate(lastLeave.start)}${lastLeave.end !== lastLeave.start ? ` – ${fmtDate(lastLeave.end)}` : ""} · ${lastLeave.workdays} hari kerja` : "Belum ada pengajuan cuti."}
+          </p>
+        </Link>
+      </div>
 
       <section className={`${mCard} mt-4 p-[18px]`}>
         <div className="flex items-center gap-2">

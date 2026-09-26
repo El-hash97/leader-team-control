@@ -4,9 +4,10 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   LayoutDashboard, Users, Grid3x3, TrendingUp, GraduationCap, CalendarCheck, ChartColumn, Settings,
-  Bell, CloudUpload, Ellipsis, LogOut, X, type LucideIcon,
+  Bell, CloudUpload, Ellipsis, LogOut, X, MessageSquareText, CalendarRange, type LucideIcon,
 } from "lucide-react";
 import { useStore } from "@/lib/store";
+import { useInbox } from "./use-inbox";
 import { logout } from "@/app/actions";
 import { LtcMark } from "./ltc-mark";
 import { dueLabel } from "@/lib/rules";
@@ -20,6 +21,8 @@ export const NAV: { href: string; label: string; icon: LucideIcon; accent: Accen
   { href: "/plans", label: "Mapping Peningkatan", icon: TrendingUp, accent: "green" },
   { href: "/trainings", label: "Training", icon: GraduationCap, accent: "amber" },
   { href: "/attendance", label: "Absensi", icon: CalendarCheck, accent: "teal" },
+  { href: "/voice", label: "Voice Member", icon: MessageSquareText, accent: "red" },
+  { href: "/cuti", label: "Pengajuan Cuti", icon: CalendarRange, accent: "green" },
   { href: "/reports", label: "Laporan", icon: ChartColumn, accent: "blue" },
   { href: "/settings", label: "Pengaturan", icon: Settings, accent: "gray" },
 ];
@@ -81,6 +84,11 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { toasts, saving } = useStore();
   const [more, setMore] = useState(false);
   const active = (href: string) => path === href || path.startsWith(`${href}/`);
+  const inbox = useInbox();
+  // PRD v3 §5.6: new (unread) voices and pending leave requests
+  const badge = (href: string) => (href === "/voice" ? inbox?.voiceNew : href === "/cuti" ? inbox?.leavePending : 0) ?? 0;
+  const badgeEl = (href: string) =>
+    badge(href) ? <span className="ml-auto min-w-6 rounded-full bg-brand-strong px-1.5 text-center text-xs font-bold leading-5 text-white">{badge(href)}</span> : null;
 
   return (
     <div className="min-h-dvh lg:grid lg:grid-cols-[248px_1fr]">
@@ -104,6 +112,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                   <Icon size={17} strokeWidth={2} />
                 </span>
                 {label}
+                {badgeEl(href)}
               </Link>
             );
           })}
@@ -157,7 +166,10 @@ export function AppShell({ children }: { children: ReactNode }) {
           <button onClick={() => setMore(true)} aria-expanded={more}
             className={cn("flex min-h-14 flex-col items-center justify-center gap-0.5 text-[11px] font-medium",
               NAV.some((n) => !BOTTOM.includes(n.href) && active(n.href)) ? "text-brand-strong" : "text-muted")}>
-            <span className="grid h-7 w-12 place-items-center"><Ellipsis size={20} /></span>Lainnya
+            <span className="relative grid h-7 w-12 place-items-center">
+              <Ellipsis size={20} />
+              {(badge("/voice") > 0 || badge("/cuti") > 0) && <span className="absolute right-2 top-0.5 size-2 rounded-full bg-brand-strong" aria-label="Ada voice atau cuti baru" />}
+            </span>Lainnya
           </button>
         </div>
       </nav>
@@ -178,6 +190,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               {NAV.filter((n) => !BOTTOM.includes(n.href)).map(({ href, label, icon: Icon, accent }) => (
                 <Link key={href} href={href} onClick={() => setMore(false)} className={cn("flex min-h-12 items-center gap-3 rounded-md px-2 text-[15px] font-medium", active(href) ? "bg-brand-soft text-brand-strong" : "hover:bg-soft")}>
                   <span className={cn("grid size-9 place-items-center rounded-md", accentChip[accent])}><Icon size={19} /></span>{label}
+                  {badgeEl(href)}
                 </Link>
               ))}
               <div className="my-2 border-t border-line" />

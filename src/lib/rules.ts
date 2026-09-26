@@ -163,3 +163,30 @@ export function attendanceSummary(records: { category: AttCategory }[]): Record<
   for (const r of records) out[r.category]++;
   return out;
 }
+
+// PRD v3 §6 (cuti): the working days a leave covers; its length is workdayList(...).length
+export function workdayList(from: ISODate, to: ISODate, workWeekdays: number[], holidays: ISODate[] = []): ISODate[] {
+  const off = new Set(holidays), out: ISODate[] = [];
+  for (let d = from; d <= to; d = addDays(d, 1)) if (workWeekdays.includes(weekday(d)) && !off.has(d)) out.push(d);
+  return out;
+}
+
+// Inclusive ranges: touching on the same day counts as overlapping
+export const leaveOverlaps = (a: { start: ISODate; end: ISODate }, b: { start: ISODate; end: ISODate }) => a.start <= b.end && b.start <= a.end;
+
+/** F-1404: processes that fall under their minimum backup (level >= 3) on a day, and to which
+ *  `memberId` contributes, i.e. the shortage is caused or worsened by approving this leave. */
+export function backupShortfall(
+  memberId: string, levels: Record<string, LevelMap>, offIds: Set<string>, processes: { id: string; name: string; minBackup: number }[],
+): { id: string; name: string; count: number; min: number }[] {
+  return processes.flatMap((p) => {
+    if ((levels[memberId]?.[p.id] ?? 0) < 3) return [];
+    const count = Object.entries(levels).filter(([m, l]) => m !== memberId && !offIds.has(m) && (l[p.id] ?? 0) >= 3).length;
+    return count < p.minBackup ? [{ id: p.id, name: p.name, count, min: p.minBackup }] : [];
+  });
+}
+
+// PRD v3 D6: one reply ends the voice
+export type VoiceStatus = "SENT" | "READ" | "REPLIED";
+export const voiceStatus = (v: { read_at: string | null; replied_at: string | null }): VoiceStatus =>
+  v.replied_at ? "REPLIED" : v.read_at ? "READ" : "SENT";

@@ -1,7 +1,7 @@
 "use client";
 import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { CalendarCheck, Check, Search } from "lucide-react";
+import { CalendarCheck, CalendarRange, Check, Search } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { isWorkday } from "@/lib/rules";
 import { fmtDateLong } from "@/lib/format";
@@ -85,6 +85,7 @@ function Attendance() {
                           <option value="">Belum diisi</option>
                           {s.attStatuses.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
                         </select>
+                        {rec?.fromLeave && <span className="mt-1 flex items-center gap-1 text-xs text-muted"><CalendarRange size={12} aria-hidden />dari pengajuan cuti</span>}
                       </td>
                       <td className="px-4">
                         <input key={`${date}${m.id}`} aria-label={`Catatan ${m.name}`} defaultValue={rec?.note ?? ""} onBlur={(e) => e.target.value !== (rec?.note ?? "") && setAttendanceNote(date, m.id, e.target.value)} placeholder="Tambah catatan" className={inputCls} />
@@ -104,7 +105,7 @@ function Attendance() {
                   <li key={m.id} className={cn("p-3", !rec && "bg-brand-soft!")}>
                     <div className="flex items-center gap-3">
                       <Avatar name={m.name} photoUrl={m.photoUrl} size={36} />
-                      <div className="min-w-0 flex-1"><b className="block truncate">{m.name}</b><span className="text-xs text-muted">{pos[m.positionId]}</span></div>
+                      <div className="min-w-0 flex-1"><b className="block truncate">{m.name}</b><span className="text-xs text-muted">{pos[m.positionId]}{rec?.fromLeave && " · dari pengajuan cuti"}</span></div>
                       {!rec && <span className="text-xs font-semibold text-brand-strong">Belum diisi</span>}
                     </div>
                     <div className="mt-2 grid grid-cols-[1fr_1.2fr] gap-2">

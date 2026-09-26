@@ -54,6 +54,12 @@ function useStoreValue(initial: State) {
       .finally(() => setSaving((n) => n - 1));
   };
   const cur = () => latest.current;
+  /** Re-read everything after a write that bypassed `commit` (e.g. an approved leave filling attendance). */
+  const reload = useCallback(async () => {
+    const fresh = await loadState();
+    latest.current = fresh;
+    setS(fresh);
+  }, []);
 
   const posOrder = useMemo(() => Object.fromEntries(s.positions.map((p) => [p.id, p.order])), [s.positions]);
   const sortMembers = useCallback(
@@ -295,7 +301,7 @@ function useStoreValue(initial: State) {
   };
 
   return {
-    s, today, refDay, toasts, toast, saving: saving > 0, activeMembers, processes, pids, levels, multi, multiSkillRate, backup,
+    s, today, refDay, toasts, toast, reload, saving: saving > 0, activeMembers, processes, pids, levels, multi, multiSkillRate, backup,
     statusById, att, monthly, alerts, sortMembers,
     setLevel, setTarget, saveMember, setActive, setAttendance, setAttendanceNote, fillUnfilled, setMemberTraining, addPlan, setPlanStatus,
     updateSettings, addProcess, updateProcess, moveProcess, addTraining, updateTraining, removeTraining, addHoliday, removeHoliday, takeBaseline,

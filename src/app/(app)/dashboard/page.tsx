@@ -1,8 +1,9 @@
 "use client";
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { Activity, ArrowRight, Award, CalendarCheck, CalendarX, CircleAlert, FileClock, GraduationCap, Layers, LayoutDashboard, Medal, Network, ShieldAlert, Target, UserCheck, Users } from "lucide-react";
+import { Activity, ArrowRight, Award, CalendarCheck, CalendarRange, CalendarX, CircleAlert, FileClock, GraduationCap, Layers, LayoutDashboard, Medal, MessageSquareText, Network, ShieldAlert, Target, UserCheck, Users } from "lucide-react";
 import { useStore } from "@/lib/store";
+import { useInbox } from "@/components/use-inbox";
 import { displayStatus, dueLabel, monthOf, rate } from "@/lib/rules";
 import { fmtDate, fmtDateLong, fmtMonth, fmtMonthShort } from "@/lib/format";
 import { Avatar, Badge, Bar, Card, CardHeader, PageHeader, PerfValue, SkillDot, Stat, TrendChart, cn, inputCls } from "@/components/ui";
@@ -11,6 +12,7 @@ export default function DashboardPage() {
   const st = useStore();
   const { s, today, refDay, activeMembers, processes, levels, multiSkillRate, backup, statusById, att, monthly, alerts } = st;
   const [month, setMonth] = useState(monthOf(today));
+  const inbox = useInbox();
 
   const todayStats = useMemo(() => {
     let hadir = 0, trainDinas = 0, absent = 0, empty = 0;
@@ -75,6 +77,24 @@ export default function DashboardPage() {
         <Stat icon={GraduationCap} accent="amber" label="Training / dinas" value={todayStats.trainDinas} hint={dayLabel} />
         <Stat icon={Activity} accent="teal" label="Rata-rata performance" value={`${avg}%`} hint={fmtMonth(month)} />
         <Stat icon={FileClock} accent="violet" label="Kontrak ≤ H-90" value={contractCount} tone={contractCount ? "warn" : undefined} hint="Termasuk yang lewat" />
+      </div>
+
+      {/* PRD v3 §5.6: member inbox at a glance */}
+      <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+        {[
+          { href: "/voice" as const, icon: MessageSquareText, label: "Voice belum dibalas", n: inbox?.voiceOpen, hint: inbox?.voiceNew ? `${inbox.voiceNew} belum dibaca` : "Semua sudah dibaca" },
+          { href: "/cuti" as const, icon: CalendarRange, label: "Cuti menunggu approval", n: inbox?.leavePending, hint: "Setujui atau tolak dengan alasan" },
+        ].map(({ href, icon: Icon, label, n, hint }) => (
+          <Link key={href} href={href} className={cn("flex items-center gap-3 rounded-lg border bg-white px-4 py-3 hover:bg-rowhover", n ? "border-brand-strong/40" : "border-line")}>
+            <span className={cn("grid size-10 place-items-center rounded-md", n ? "bg-brand-strong text-white" : "bg-soft text-muted")}><Icon size={20} /></span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm text-muted">{label}</span>
+              <span className="block text-xs text-muted">{inbox ? hint : "Memuat…"}</span>
+            </span>
+            <b className="tabular text-2xl">{n ?? "–"}</b>
+            <ArrowRight size={16} className="text-muted" />
+          </Link>
+        ))}
       </div>
 
       <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-5">
