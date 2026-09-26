@@ -1,12 +1,13 @@
 "use client";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import {
   LayoutDashboard, Users, Grid3x3, TrendingUp, GraduationCap, CalendarCheck, ChartColumn, Settings,
   Bell, Ellipsis, LogOut, RotateCcw, X, type LucideIcon,
 } from "lucide-react";
-import { useStore } from "@/lib/store";
+import { AUTH_KEY, useStore } from "@/lib/store";
+import { LtcMark } from "./ltc-mark";
 import { dueLabel } from "@/lib/rules";
 import { accentChip, cn, type Accent } from "./ui";
 
@@ -74,11 +75,23 @@ function Notifications() {
   );
 }
 
+// sessionStorage never changes while a page is open, so there is nothing to subscribe to
+const noSubscribe = () => () => {};
+const readAuth = () => { try { return sessionStorage.getItem(AUTH_KEY) === "1"; } catch { return false; } };
+const logout = () => { try { sessionStorage.removeItem(AUTH_KEY); } catch {} };
+
 export function AppShell({ children }: { children: ReactNode }) {
   const path = usePathname();
+  const router = useRouter();
+  // null on the server, then the real value in the browser
+  const authed = useSyncExternalStore(noSubscribe, readAuth, () => null);
+  useEffect(() => { if (authed === false) router.replace("/login"); }, [authed, router]);
   const { toasts, resetDemo, toast } = useStore();
   const [more, setMore] = useState(false);
   const active = (href: string) => path === href || path.startsWith(`${href}/`);
+
+  // not signed in (or not known yet): show nothing until the redirect to /login happens
+  if (authed !== true) return <div className="min-h-dvh bg-canvas" aria-busy="true" />;
 
   return (
     <div className="min-h-dvh lg:grid lg:grid-cols-[248px_1fr]">
@@ -109,7 +122,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <button onClick={() => { resetDemo(); toast("Data contoh dikembalikan ke awal."); }} className="flex min-h-10 w-full items-center gap-3 rounded-md px-3 text-sm text-muted hover:bg-soft">
             <RotateCcw size={16} />Reset data contoh
           </button>
-          <Link href="/login" className="flex min-h-10 items-center gap-3 rounded-md px-3 text-sm text-muted hover:bg-soft"><LogOut size={16} />Keluar</Link>
+          <Link href="/login" onClick={logout} className="flex min-h-10 items-center gap-3 rounded-md px-3 text-sm text-muted hover:bg-soft"><LogOut size={16} />Keluar</Link>
         </div>
       </aside>
 
@@ -117,7 +130,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <header className="sticky top-0 z-40 bg-brand-strong text-white shadow-[0_2px_10px_-2px_rgb(120_0_16/0.45)]">
         <div className="flex h-16 items-center justify-between gap-3 px-4 sm:px-6">
           <Link href="/dashboard" className="flex min-w-0 items-center gap-3">
-            <span aria-hidden className="grid size-10 shrink-0 place-items-center rounded-md bg-white text-[13px] font-black tracking-tight text-brand-strong lg:hidden">LTC</span>
+            <span aria-hidden className="grid size-10 shrink-0 place-items-center rounded-md bg-white lg:hidden"><LtcMark size={30} /></span>
             <span className="min-w-0">
               <span className="block truncate text-[17px] font-bold leading-tight sm:text-lg">Leader Team Control</span>
               <span className="block truncate text-xs text-[#ffe1e5]">Skill &amp; mapping peningkatan member</span>
@@ -174,7 +187,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               ))}
               <div className="my-2 border-t border-line" />
               <button onClick={() => { resetDemo(); toast("Data contoh dikembalikan ke awal."); setMore(false); }} className="flex min-h-12 items-center gap-3 rounded-md px-3 text-[15px] text-muted hover:bg-soft"><RotateCcw size={18} />Reset data contoh</button>
-              <Link href="/login" onClick={() => setMore(false)} className="flex min-h-12 items-center gap-3 rounded-md px-3 text-[15px] text-muted hover:bg-soft"><LogOut size={18} />Keluar</Link>
+              <Link href="/login" onClick={() => { logout(); setMore(false); }} className="flex min-h-12 items-center gap-3 rounded-md px-3 text-[15px] text-muted hover:bg-soft"><LogOut size={18} />Keluar</Link>
             </nav>
           </div>
         </div>

@@ -21,14 +21,28 @@
   --color-teal-soft: #dff2ef;
   --color-violet: #5b3fb5;
   --color-violet-soft: #eee9fb;
+  /* login · luxury dark (Hallmark custom: "showroom night, ember red, ivory paper") */
+  --color-night: oklch(0.17 0.012 25);
+  --color-night-2: oklch(0.23 0.014 25);
+  --color-night-line: oklch(0.32 0.014 25);
+  --color-mist: oklch(0.8 0.012 60);
+  --color-ivory: oklch(0.975 0.008 80);
+  --color-ivory-line: oklch(0.88 0.012 70);
   --color-zebra: #f2f6fb;
   --color-rowhover: #fdf1f2;
 
   --font-sans: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
 }
 
+/* next/font variables are set on the login root; fall back to the system stack elsewhere */
+@theme inline {
+  --font-display: var(--font-instrument), "Times New Roman", serif;
+  --font-ui: var(--font-manrope), var(--font-sans);
+}
+
 html {
   -webkit-text-size-adjust: 100%;
+  overflow-x: clip;
 }
 
 body {

@@ -8,6 +8,9 @@ import {
   displayStatus, lastWorkday, rate, type LevelMap, type PlanStatus, type ISODate,
 } from "./rules";
 
+/** sessionStorage flag set by the preview login page. */
+export const AUTH_KEY = "ltc-auth";
+
 type Toast = { id: number; msg: string };
 
 export type MonthlyRow = {
