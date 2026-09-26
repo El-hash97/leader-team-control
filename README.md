@@ -1,36 +1,37 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Leader Team Control
 
-## Getting Started
+Web app for team leaders to monitor member skills per process (Toyota 1/4–4/4 skill map), plan skill upgrades for QCC activities, and control daily attendance.
 
-First, run the development server:
+> **UI preview.** All data is generated sample data held in memory (`src/lib/mock.ts`). Refreshing the page resets it. No backend is connected yet.
+
+## Features
+
+- **Dashboard**: daily KPIs, process backup for absent experts, contract/certificate alerts, QCC multi-skill trend, attendance ranking.
+- **Data Member**: members with NoReg, position, class (3A–6C, Vokasi has none), contract end calculated from contract rules.
+- **Skill Map**: member × process grid, evaluation history, target gaps, processes without backup.
+- **Mapping Peningkatan**: upgrade plans with status flow; marking a plan achieved raises the skill map level.
+- **Training**: certificate expiry (SIO) and member × training matrix.
+- **Absensi**: daily input, mobile-first, bulk fill for unfilled members only.
+- **Laporan**: monthly performance (CSV export), skill report, QCC before/after.
+- **Pengaturan**: group parameters, contract length rules, process rename/order, holidays, baseline snapshot.
+
+## Stack
+
+Next.js (App Router) · TypeScript · Tailwind CSS · lucide-react
+
+## Run
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+pnpm install
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000 and sign in with any value (preview mode).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+pnpm test        # business rules (node --test)
+pnpm typecheck
+pnpm lint
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Business rules (working days, performance, contract length, multi-skill, backup) live in `src/lib/rules.ts` as pure functions with tests in `src/lib/rules.test.ts`.

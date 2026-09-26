@@ -1,26 +1,94 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* Toyota identity per PRD §8.1: one red accent on a neutral base.
+   brand-strong is used for text/buttons on white (5.5:1); brand for marks only. */
+@theme {
+  --color-brand: #eb0a1e;
+  --color-brand-strong: #c8001a;
+  --color-brand-soft: #fdecee;
+  --color-ink: #1a1a1a;
+  --color-muted: #5f6368;
+  --color-line: #e3e3e1;
+  --color-soft: #f4f4f2;
+  --color-canvas: #f6f5f2;
+  --color-good: #177a41;
+  --color-good-soft: #e6f4ec;
+  --color-warn: #8a5a00;
+  --color-warn-soft: #fff3d6;
+  --color-info: #1f5fb3;
+  --color-info-soft: #e7effb;
+  --color-teal: #0f766e;
+  --color-teal-soft: #dff2ef;
+  --color-violet: #5b3fb5;
+  --color-violet-soft: #eee9fb;
+  --color-zebra: #f2f6fb;
+  --color-rowhover: #fdf1f2;
+
+  --font-sans: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-brand-strong);
+  outline-offset: 2px;
+}
+
+button,
+[role="button"],
+select,
+summary {
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+dialog::backdrop {
+  background: rgb(0 0 0 / 0.45);
+}
+
+::selection {
+  background: #f9c9cf;
+  color: var(--color-ink);
+}
+
+* {
+  scrollbar-color: #c9ccd1 transparent;
+  scrollbar-width: thin;
+}
+
+/* Zebra rows: low-opacity blue tint on even rows, red tint on hover.
+   --row lets sticky cells follow the row color. */
+.zebra > tbody > tr {
+  --row: #fff;
+  background: var(--row);
+}
+.zebra > tbody > tr:nth-child(even) {
+  --row: var(--color-zebra);
+}
+.zebra > tbody > tr:hover {
+  --row: var(--color-rowhover);
+}
+.zebra-list > li:nth-child(even) {
+  background: var(--color-zebra);
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }
