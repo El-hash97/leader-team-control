@@ -112,13 +112,21 @@ export default function LoginPage() {
   return (
     <div ref={root} data-login className={cn(display.variable, ui.variable, "min-h-dvh bg-ivory font-ui text-ink lg:grid lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]")}>
       {/* ——— Night panel ——— */}
-      <section className="relative isolate flex min-h-[44svh] flex-col justify-end gap-10 overflow-hidden bg-night px-6 py-7 text-ivory sm:px-10 lg:min-h-dvh lg:px-14 lg:py-12">
+      <section className="relative isolate flex min-h-[52svh] flex-col justify-between gap-10 overflow-hidden bg-night px-6 py-7 text-ivory sm:px-10 lg:min-h-dvh lg:px-14 lg:py-12">
         <svg aria-hidden viewBox="0 0 600 600" className="pointer-events-none absolute -bottom-40 -right-40 -z-10 w-[640px] max-w-none sm:-bottom-52 sm:-right-44 lg:w-[760px]">
           {[140, 210, 280].map((r, i) => (
             <path key={r} data-arc d={bigArc(r, MARK_ARCS[i].sweep)} fill="none" stroke={i === 2 ? "var(--color-brand)" : "var(--color-night-line)"}
               strokeOpacity={i === 2 ? 0.55 : 1} strokeWidth={i === 2 ? 3 : 2} strokeLinecap="round" />
           ))}
         </svg>
+
+        <div data-exit className="flex items-center gap-3">
+          <LtcMark tone="dark" size={46} />
+          <div className="leading-tight">
+            <div className="text-[15px] font-semibold tracking-tight">Leader Team Control</div>
+            <div className="text-xs text-mist">Skill &amp; mapping peningkatan member</div>
+          </div>
+        </div>
 
         <div data-exit className="max-w-xl">
           <h1 ref={title} className="font-display text-[clamp(3.1rem,8.5vw,6.75rem)] font-normal leading-[0.94] tracking-[-0.02em] [overflow-wrap:anywhere]">
