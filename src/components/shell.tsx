@@ -88,9 +88,10 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       {/* Desktop sidebar: own white top bar with the logo */}
       <aside className="sticky top-0 hidden h-dvh flex-col border-r border-line bg-white lg:flex">
-        <Link href="/dashboard" className="flex h-16 shrink-0 items-center border-b border-line px-6" aria-label="Leader Team Control, ke Dashboard">
+        <Link href="/dashboard" className="flex shrink-0 flex-col justify-center gap-1.5 border-b border-line px-6 py-4" aria-label="Leader Team Control, ke Dashboard">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/toyota-logo.png" alt="Toyota" width={640} height={120} className="h-[26px] w-auto" />
+          <img src="/toyota-logo.png" alt="Toyota" width={640} height={120} className="h-[24px] w-auto" />
+          <span className="text-[11px] font-semibold uppercase tracking-wide text-muted">Finishing Line – Casting Division</span>
         </Link>
         <nav aria-label="Menu utama" className="flex-1 space-y-0.5 overflow-y-auto px-3 py-4">
           {NAV.map(({ href, label, icon: Icon, accent }) => {
@@ -116,14 +117,19 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <div className="min-w-0">
       <header className="sticky top-0 z-40 bg-brand-strong text-white shadow-[0_2px_10px_-2px_rgb(120_0_16/0.45)]">
-        <div className="flex h-16 items-center justify-between gap-3 px-4 sm:px-6">
-          <Link href="/dashboard" className="flex min-w-0 items-center gap-3">
-            <span aria-hidden className="grid size-10 shrink-0 place-items-center rounded-md bg-white lg:hidden"><LtcMark size={30} /></span>
-            <span className="min-w-0">
-              <span className="block truncate text-[17px] font-bold leading-tight sm:text-lg">Leader Team Control</span>
-              <span className="block truncate text-xs text-[#ffe1e5]">Skill &amp; mapping peningkatan member</span>
-            </span>
+        <div className="relative flex h-16 items-center justify-between gap-3 px-4 sm:px-6">
+          {/* kept as a real (empty at lg+) flex item so justify-between still pins the actions to the right */}
+          <Link href="/dashboard" aria-label="Leader Team Control, ke Dashboard" className="flex shrink-0 items-center">
+            <span aria-hidden className="grid size-10 place-items-center rounded-md bg-white lg:hidden"><LtcMark size={30} /></span>
           </Link>
+
+          {/* absolutely centered on the header itself, so it stays centered even though the
+              action cluster on the right is wider than the mark on the left */}
+          <Link href="/dashboard" className="absolute left-1/2 max-w-60 -translate-x-1/2 text-center leading-tight">
+            <span className="block truncate text-[17px] font-bold sm:text-lg">Leader Team Control</span>
+            <span className="block truncate text-xs text-[#ffe1e5]">Skill &amp; mapping peningkatan member</span>
+          </Link>
+
           <div className="flex shrink-0 items-center gap-1">
             {saving && <span role="status" className="hidden items-center gap-1.5 text-xs text-[#ffe1e5] sm:flex"><CloudUpload size={15} />Menyimpan…</span>}
             <Notifications />
@@ -160,9 +166,12 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="Menu lainnya">
           <button aria-label="Tutup menu" className="absolute inset-0 bg-black/45" onClick={() => setMore(false)} />
           <div className="absolute inset-x-0 bottom-0 rounded-t-xl bg-white pb-[env(safe-area-inset-bottom)]">
-            <div className="flex items-center justify-between border-b border-line px-4 py-2">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/toyota-logo.png" alt="Toyota" width={640} height={120} className="h-5 w-auto" />
+            <div className="flex items-center justify-between border-b border-line px-4 py-3">
+              <div className="flex flex-col gap-1">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/toyota-logo.png" alt="Toyota" width={640} height={120} className="h-5 w-auto" />
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-muted">Finishing Line – Casting Division</span>
+              </div>
               <button onClick={() => setMore(false)} aria-label="Tutup" className="grid size-11 place-items-center text-muted"><X size={20} /></button>
             </div>
             <nav className="grid grid-cols-1 p-2">
