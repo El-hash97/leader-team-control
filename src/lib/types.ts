@@ -8,7 +8,7 @@ export type Position = { id: string; name: string; order: number };
 export type EmpStatus = { id: string; name: string; hasContract: boolean };
 export type AttStatus = { id: string; name: string; category: AttCategory };
 export type Process = { id: string; name: string; order: number; minBackup: number | null; active: boolean };
-export type Training = { id: string; name: string; hasExpiry: boolean };
+export type Training = { id: string; name: string; hasExpiry: boolean; order: number };
 export type Member = {
   id: string; name: string; noreg: string; positionId: string; statusId: string; kelas: Kelas | null;
   joinDate: ISODate; contractEnd: ISODate | null; photoUrl: string | null; notes: string;

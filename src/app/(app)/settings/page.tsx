@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { CalendarX, Check, ChevronDown, ChevronUp, Database, Download, FileClock, Info, Layers, ListChecks, Pencil, Plus, Settings, SlidersHorizontal, Upload, X } from "lucide-react";
+import { CalendarX, Check, ChevronDown, ChevronUp, Database, Download, FileClock, GraduationCap, Info, Layers, ListChecks, Pencil, Plus, Settings, SlidersHorizontal, Trash, Upload, X } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { fmtDate } from "@/lib/format";
 import { Badge, Button, Card, CardHeader, Dialog, Field, PageHeader, cn, inputCls } from "@/components/ui";
@@ -17,10 +17,14 @@ type V1Preview = { members: number; attendance: number; conflicts: string[]; unk
 
 export default function SettingsPage() {
   const st = useStore();
-  const { s, today, updateSettings, addProcess, updateProcess, moveProcess, addHoliday, removeHoliday, takeBaseline, toast } = st;
+  const { s, today, updateSettings, addProcess, updateProcess, moveProcess, addTraining, updateTraining, removeTraining, addHoliday, removeHoliday, takeBaseline, toast } = st;
   const [p, setP] = useState(s.settings);
   const [newProc, setNewProc] = useState("");
   const [renaming, setRenaming] = useState<{ id: string; name: string } | null>(null);
+  const [newTraining, setNewTraining] = useState({ name: "", hasExpiry: false });
+  const [editTraining, setEditTraining] = useState<{ id: string; name: string } | null>(null);
+  const trainingUse = (id: string) => s.memberTrainings.filter((m) => m.trainingId === id).length;
+  const trainingNameTaken = (name: string, except?: string) => s.trainings.some((t) => t.id !== except && t.name.toLowerCase() === name.toLowerCase());
   const [holiday, setHoliday] = useState("");
   const [baseline, setBaseline] = useState(false);
   const [typed, setTyped] = useState("");
@@ -204,6 +208,65 @@ export default function SettingsPage() {
         </Card>
 
         <Card>
+          <CardHeader icon={GraduationCap} accent="amber" title="Training" desc="Daftar training untuk matriks training dan profil member." />
+          <ul className="zebra-list divide-y divide-line">
+            {[...s.trainings].sort((a, b) => a.order - b.order).map((t) => {
+              const used = trainingUse(t.id);
+              return (
+                <li key={t.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 sm:px-4">
+                  {editTraining?.id === t.id ? (
+                    <form className="flex min-w-0 flex-1 basis-full gap-1.5 sm:basis-auto" onSubmit={(e) => {
+                      e.preventDefault();
+                      const name = editTraining.name.trim().toUpperCase();
+                      if (!name) return toast("Nama training tidak boleh kosong.");
+                      if (trainingNameTaken(name, t.id)) return toast(`Training "${name}" sudah ada.`);
+                      updateTraining(t.id, { name });
+                      toast(`${t.name} diubah menjadi ${name}.`);
+                      setEditTraining(null);
+                    }}>
+                      <input autoFocus aria-label={`Nama baru untuk ${t.name}`} value={editTraining.name} onChange={(e) => setEditTraining({ id: t.id, name: e.target.value })}
+                        onKeyDown={(e) => e.key === "Escape" && setEditTraining(null)} className={cn(inputCls, "min-w-0 flex-1 uppercase")} />
+                      <button type="submit" aria-label="Simpan nama training" className="grid size-10 shrink-0 place-items-center rounded-md bg-brand-strong text-white"><Check size={17} /></button>
+                      <button type="button" onClick={() => setEditTraining(null)} aria-label="Batal ubah nama" className="grid size-10 shrink-0 place-items-center rounded-md border border-line text-muted"><X size={17} /></button>
+                    </form>
+                  ) : (
+                    <div className="flex min-w-0 flex-1 basis-full items-center gap-1 sm:basis-auto">
+                      <span className="min-w-0 flex-1 truncate text-sm font-semibold">{t.name}</span>
+                      <span className="tabular shrink-0 text-xs text-muted">{used} member</span>
+                      <button onClick={() => setEditTraining({ id: t.id, name: t.name })} aria-label={`Ubah nama ${t.name}`}
+                        className="inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-md px-2 text-xs font-semibold text-warn hover:bg-warn-soft"><Pencil size={14} />Ubah</button>
+                    </div>
+                  )}
+                  <label className="flex min-h-10 items-center gap-1.5 text-xs text-muted">
+                    <input type="checkbox" checked={t.hasExpiry} onChange={(e) => { updateTraining(t.id, { hasExpiry: e.target.checked }); toast(e.target.checked ? `${t.name} sekarang punya masa berlaku.` : `${t.name} tanpa masa berlaku.`); }}
+                      className="size-4 accent-[var(--color-brand-strong)]" />Masa berlaku
+                  </label>
+                  <button disabled={used > 0} onClick={() => { removeTraining(t.id); toast(`${t.name} dihapus.`); }}
+                    title={used ? "Sudah dipakai member, tidak bisa dihapus" : "Hapus training"} aria-label={`Hapus ${t.name}`}
+                    className="grid size-10 shrink-0 place-items-center rounded-md text-muted hover:bg-brand-soft hover:text-brand-strong disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent"><Trash size={16} /></button>
+                </li>
+              );
+            })}
+          </ul>
+          <form className="flex flex-wrap items-center gap-2 border-t border-line p-3 sm:px-4" onSubmit={(e) => {
+            e.preventDefault();
+            const name = newTraining.name.trim().toUpperCase();
+            if (!name) return;
+            if (trainingNameTaken(name)) return toast(`Training "${name}" sudah ada.`);
+            addTraining(name, newTraining.hasExpiry);
+            setNewTraining({ name: "", hasExpiry: false });
+            toast(`Training ${name} ditambahkan.`);
+          }}>
+            <input value={newTraining.name} onChange={(e) => setNewTraining({ ...newTraining, name: e.target.value })} placeholder="Nama training baru" aria-label="Nama training baru" className={cn(inputCls, "min-w-0 flex-1 basis-full uppercase placeholder:normal-case sm:basis-auto")} />
+            <label className="flex min-h-10 items-center gap-1.5 text-xs text-muted">
+              <input type="checkbox" checked={newTraining.hasExpiry} onChange={(e) => setNewTraining({ ...newTraining, hasExpiry: e.target.checked })} className="size-4 accent-[var(--color-brand-strong)]" />Masa berlaku
+            </label>
+            <Button type="submit" disabled={!newTraining.name.trim()}><Plus size={16} />Tambah</Button>
+          </form>
+          <p className="border-t border-line px-4 py-2 text-xs text-muted">Centang &quot;Masa berlaku&quot; untuk sertifikat seperti SIO, supaya tanggal kedaluwarsa wajib diisi dan muncul di pengingat. Training yang sudah dipakai member tidak bisa dihapus.</p>
+        </Card>
+
+        <Card>
           <CardHeader icon={CalendarX} accent="red" title="Hari libur" desc="Tidak dihitung sebagai hari kerja di laporan." />
           <form className="flex gap-2 p-3 sm:px-4" onSubmit={(e) => { e.preventDefault(); if (holiday) { addHoliday(holiday); setHoliday(""); } }}>
             <input type="date" value={holiday} onChange={(e) => setHoliday(e.target.value)} aria-label="Tanggal libur" className={inputCls} />
@@ -229,7 +292,6 @@ export default function SettingsPage() {
               ["Posisi (urutan hirarki)", [...s.positions].sort((a, b) => a.order - b.order).map((x) => x.name)],
               ["Status karyawan", s.empStatuses.map((x) => `${x.name}${x.hasContract ? " · kontrak" : ""}`)],
               ["Status absensi", s.attStatuses.map((x) => `${x.name} · ${CAT[x.category]}`)],
-              ["Training", s.trainings.map((x) => `${x.name}${x.hasExpiry ? " · berlaku" : ""}`)],
             ].map(([title, items]) => (
               <div key={title as string}>
                 <h3 className="mb-1.5 text-sm font-semibold">{title}</h3>

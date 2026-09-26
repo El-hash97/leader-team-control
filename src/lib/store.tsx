@@ -2,9 +2,9 @@
 // App state loaded from Supabase by the (app) layout. Actions update the screen first,
 // then persist through the `save` server action; a failed write reloads from the database.
 import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from "react";
-import { attKey, type State, type Member, type Plan, type Settings, type Process, type SkillLog } from "./types";
+import { attKey, type State, type Member, type Plan, type Settings, type Process, type SkillLog, type Training } from "./types";
 import {
-  attRow, logRow, memberRow, planRow, processRow, settingsRow, skillRow, snapshotRow, trainingRow, type Op,
+  attRow, logRow, memberRow, planRow, processRow, settingsRow, skillRow, snapshotRow, trainingMasterRow, trainingRow, type Op,
 } from "./db-map";
 import { loadState, save } from "@/app/actions";
 import {
@@ -213,6 +213,23 @@ function useStoreValue(initial: State) {
     commit({ ...st, memberTrainings: [...rest, row] }, [{ table: "member_trainings", upsert: [trainingRow(row)] }]);
   };
 
+  // ---------- training master ----------
+  const addTraining = (name: string, hasExpiry: boolean) => {
+    const st = cur();
+    const t: Training = { id: uid(), name, hasExpiry, order: Math.max(-1, ...st.trainings.map((x) => x.order)) + 1 };
+    commit({ ...st, trainings: [...st.trainings, t] }, [{ table: "trainings", upsert: [trainingMasterRow(t)] }]);
+  };
+  const updateTraining = (id: string, patch: Partial<Training>) => {
+    const st = cur(), trainings = st.trainings.map((t) => (t.id === id ? { ...t, ...patch } : t));
+    commit({ ...st, trainings }, [{ table: "trainings", upsert: trainings.filter((t) => t.id === id).map(trainingMasterRow) }]);
+  };
+  // only unused trainings: deleting a used one would cascade-delete member training history
+  const removeTraining = (id: string) => {
+    const st = cur();
+    if (st.memberTrainings.some((m) => m.trainingId === id)) return;
+    commit({ ...st, trainings: st.trainings.filter((t) => t.id !== id) }, [{ table: "trainings", delete: { id } }]);
+  };
+
   const addPlan = (p: Plan) => {
     const st = cur(), plan = { ...p, id: uid() };
     commit({ ...st, plans: [plan, ...st.plans] }, [{ table: "plans", upsert: [planRow(plan)] }]);
@@ -281,7 +298,7 @@ function useStoreValue(initial: State) {
     s, today, refDay, toasts, toast, saving: saving > 0, activeMembers, processes, pids, levels, multi, multiSkillRate, backup,
     statusById, att, monthly, alerts, sortMembers,
     setLevel, setTarget, saveMember, setActive, setAttendance, setAttendanceNote, fillUnfilled, setMemberTraining, addPlan, setPlanStatus,
-    updateSettings, addProcess, updateProcess, moveProcess, addHoliday, removeHoliday, takeBaseline,
+    updateSettings, addProcess, updateProcess, moveProcess, addTraining, updateTraining, removeTraining, addHoliday, removeHoliday, takeBaseline,
   };
 }
 

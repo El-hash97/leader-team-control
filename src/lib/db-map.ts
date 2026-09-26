@@ -2,7 +2,7 @@
 // Shared by the server loader and the client-side save builders.
 import type { AttCategory, PlanStatus } from "./rules";
 import {
-  attKey, type Kelas, type Member, type MemberTraining, type Plan, type PlanMethod, type Process,
+  attKey, type Kelas, type Member, type MemberTraining, type Plan, type PlanMethod, type Process, type Training,
   type Settings, type SkillLog, type Snapshot, type State,
 } from "./types";
 
@@ -32,7 +32,7 @@ export function toState(t: Tables): State {
     positions: t.positions.map((r) => ({ id: r.id, name: r.name, order: r.sort })),
     empStatuses: t.emp_statuses.map((r) => ({ id: r.id, name: r.name, hasContract: r.has_contract })),
     attStatuses: [...t.att_statuses].sort((a, b) => a.sort - b.sort).map((r) => ({ id: r.id, name: r.name, category: r.category as AttCategory })),
-    trainings: [...t.trainings].sort((a, b) => a.sort - b.sort).map((r) => ({ id: r.id, name: r.name, hasExpiry: r.has_expiry })),
+    trainings: [...t.trainings].sort((a, b) => a.sort - b.sort).map((r) => ({ id: r.id, name: r.name, hasExpiry: r.has_expiry, order: r.sort })),
     processes: t.processes.map((r): Process => ({ id: r.id, name: r.name, order: r.sort, minBackup: r.min_backup, active: r.active })),
     members: t.members.map((r): Member => ({
       id: r.id, name: r.name, noreg: r.noreg, positionId: r.position_id, statusId: r.status_id, kelas: r.kelas as Kelas | null,
@@ -75,6 +75,7 @@ export const planRow = (p: Plan): Row => ({
   id: p.id, member_id: p.memberId, process_id: p.processId, from_level: p.fromLevel, target_level: p.targetLevel,
   start_date: p.startDate, due_date: p.dueDate, method: p.method, mentor_id: p.mentorId, status: p.status, achieved_at: p.achievedAt, note: p.note,
 });
+export const trainingMasterRow = (t: Training): Row => ({ id: t.id, name: t.name, has_expiry: t.hasExpiry, sort: t.order });
 export const trainingRow = (t: MemberTraining): Row => ({ member_id: t.memberId, training_id: t.trainingId, trained_at: t.trainedAt, expires_at: t.expiresAt });
 export const attRow = (date: string, memberId: string, statusId: string, note: string): Row => ({ member_id: memberId, date, status_id: statusId, note });
 export const snapshotRow = (x: Snapshot): Row => ({ id: x.id, month: x.month, kind: x.kind, multi_skill_rate: x.multiSkillRate, safe_processes: x.safeProcesses });
