@@ -1,13 +1,15 @@
 "use client";
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Activity, ArrowDown, ArrowUp, BarChart3, ChartColumn, ClipboardList, Download, Layers, Printer, Target, TrendingUp, Users } from "lucide-react";
+import { Activity, ArrowDown, ArrowUp, BarChart3, ChartColumn, Check, ClipboardList, Clock, Download, Layers, MessageSquareText, Printer, Target, Timer, TrendingUp, Users } from "lucide-react";
+import { listVoices, type LeaderVoice } from "@/app/inbox-actions";
+import { VOICE_CATEGORIES, VOICE_CATEGORY, VOICE_STATUS } from "@/components/voice-meta";
 import { useStore } from "@/lib/store";
-import { groupWorkdays, monthEnd, monthOf, monthStart, shiftMonth } from "@/lib/rules";
+import { groupWorkdays, median, monthEnd, monthOf, monthStart, replyWorkdays, shiftMonth } from "@/lib/rules";
 import { fmtDate, fmtMonth, fmtMonthShort } from "@/lib/format";
 import { Bar, Button, Card, CardHeader, PageHeader, PerfValue, Segmented, Stat, TrendChart, cn, inputCls } from "@/components/ui";
 
-type Tab = "performance" | "skill" | "qcc";
+type Tab = "performance" | "skill" | "qcc" | "voice";
 
 export default function ReportsPage() {
   return <Suspense><Reports /></Suspense>;
@@ -16,15 +18,15 @@ export default function ReportsPage() {
 function Reports() {
   const params = useSearchParams();
   const router = useRouter();
-  const tab = (["performance", "skill", "qcc"].includes(params.get("tab") ?? "") ? params.get("tab") : "performance") as Tab;
+  const tab = (["performance", "skill", "qcc", "voice"].includes(params.get("tab") ?? "") ? params.get("tab") : "performance") as Tab;
   return (
     <>
-      <PageHeader title="Laporan" desc="Performance absensi, perkembangan skill, dan hasil QCC." icon={ChartColumn} accent="blue" />
+      <PageHeader title="Laporan" desc="Performance absensi, perkembangan skill, hasil QCC, dan voice member." icon={ChartColumn} accent="blue" />
       <div className="mb-4">
         <Segmented label="Jenis laporan" value={tab} onChange={(t) => router.replace(`/reports?tab=${t}`)}
-          options={[{ value: "performance", label: "Performance" }, { value: "skill", label: "Skill" }, { value: "qcc", label: "QCC before–after" }]} />
+          options={[{ value: "performance", label: "Performance" }, { value: "skill", label: "Skill" }, { value: "qcc", label: "QCC before–after" }, { value: "voice", label: "Voice" }]} />
       </div>
-      {tab === "performance" ? <Performance /> : tab === "skill" ? <Skill /> : <Qcc />}
+      {tab === "performance" ? <Performance /> : tab === "skill" ? <Skill /> : tab === "qcc" ? <Qcc /> : <VoiceReport />}
     </>
   );
 }
@@ -184,6 +186,70 @@ function Qcc() {
           </ul>
         </Card>
       </div>
+    </>
+  );
+}
+
+const jktDay = (ts: string) => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jakarta" }).format(new Date(ts));
+
+/** PRD v3 F-1502: voices per category for a month, median reply time in working days (KPI ≤ 2), still unanswered. */
+function VoiceReport() {
+  const { s, today, toast } = useStore();
+  const [month, setMonth] = useState(monthOf(today));
+  const [all, setAll] = useState<LeaderVoice[] | null>(null);
+  useEffect(() => { listVoices().then(setAll, () => setAll([])); }, []);
+
+  const inMonth = (all ?? []).filter((v) => monthOf(jktDay(v.createdAt)) === month);
+  const replyDays = inMonth.filter((v) => v.repliedAt)
+    .map((v) => replyWorkdays(jktDay(v.createdAt), jktDay(v.repliedAt!), s.settings.workWeekdays, s.holidays));
+  const med = median(replyDays);
+  const rows = VOICE_CATEGORIES.map((c) => {
+    const list = inMonth.filter((v) => v.category === c);
+    return { c, total: list.length, replied: list.filter((v) => v.repliedAt).length };
+  });
+  const max = Math.max(1, ...rows.map((r) => r.total));
+  const open = inMonth.filter((v) => !v.repliedAt).length;
+
+  function exportCsv() {
+    const head = ["Tanggal", "NoReg", "Nama", "Kategori", "Proses", "Isi", "Status", "Dibalas", "Hari kerja sampai dibalas", "Balasan"];
+    const body = inMonth.map((v) => [jktDay(v.createdAt), v.noreg, v.memberName, VOICE_CATEGORY[v.category].label, v.processName ?? "", v.body,
+      VOICE_STATUS[v.status].label, v.repliedAt ? jktDay(v.repliedAt) : "",
+      v.repliedAt ? replyWorkdays(jktDay(v.createdAt), jktDay(v.repliedAt), s.settings.workWeekdays, s.holidays) : "", v.reply ?? ""]);
+    const csv = [head, ...body].map((row) => row.map((x) => `"${String(x).replaceAll('"', '""')}"`).join(",")).join("\n");
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" }));
+    a.download = `Voice-Member-${month}.csv`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    toast("Rekap voice CSV diunduh.");
+  }
+
+  return (
+    <>
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <input type="month" aria-label="Bulan laporan" max={monthOf(today)} value={month} onChange={(e) => e.target.value && setMonth(e.target.value)} className={cn(inputCls, "w-auto")} />
+        <Button onClick={exportCsv} disabled={!inMonth.length}><Download size={16} />Export CSV</Button>
+      </div>
+      <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <Stat icon={MessageSquareText} accent="red" label="Voice masuk" value={all ? inMonth.length : "…"} hint={fmtMonth(month)} />
+        <Stat icon={Check} accent="green" label="Sudah dibalas" value={inMonth.length - open} />
+        <Stat icon={Clock} accent="amber" label="Belum dibalas" value={open} tone={open ? "warn" : undefined} />
+        <Stat icon={Timer} accent="blue" label="Median waktu balas" value={med === null ? "-" : `${med} hari`} hint="Hari kerja · target ≤ 2" tone={med !== null && med > 2 ? "bad" : med !== null ? "good" : undefined} />
+      </div>
+      <Card>
+        <CardHeader icon={BarChart3} accent="red" title="Voice per kategori" desc="Batang = jumlah voice bulan ini, angka kanan = sudah dibalas / total." />
+        {!all ? <p className="px-5 py-4 text-sm text-muted">Memuat…</p> : !inMonth.length ? <p className="px-5 py-4 text-sm text-muted">Belum ada voice di bulan ini.</p> : (
+          <ul className="space-y-3 px-4 py-4 sm:px-5">
+            {rows.map((r) => (
+              <li key={r.c} className="grid grid-cols-[150px_1fr_64px] items-center gap-3 text-sm">
+                <span className={cn(r.c === "K3" && "font-semibold text-brand-strong")}>{VOICE_CATEGORY[r.c].label}</span>
+                <Bar value={(r.total / max) * 100} tone={r.c === "K3" ? "brand" : "ink"} />
+                <span className="tabular text-right">{r.replied}/{r.total}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
     </>
   );
 }

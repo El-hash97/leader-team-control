@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { db, loadTables } from "@/lib/server/db";
 import {
   checkCredentials, codeMatches, endSession, hashCode, hashPassword, isAuthed, newActivationCode,
-  startMemberSession, startSession, verifyPassword,
+  readSeenBase, setSeenBase, startMemberSession, startSession, verifyPassword,
 } from "@/lib/server/session";
 import { requireMember } from "@/lib/server/member";
 import { isMemberLogin, nextFailState } from "@/lib/rules";
@@ -146,6 +146,16 @@ export async function changePassword(current: string, next: string): Promise<Res
   if (error) return { ok: false, error: "Gagal menyimpan. Coba lagi." };
   await startMemberSession(me.id, version);
   return { ok: true };
+}
+
+/** F-1503: the first request of a visit freezes the previous visit time in a cookie, then records this visit. */
+export async function beginVisit(): Promise<void> {
+  const me = await requireMember();
+  if (!me || (await readSeenBase())) return;
+  const { data } = await db().from("member_accounts").select("last_seen_at").eq("member_id", me.id).maybeSingle();
+  const now = new Date().toISOString();
+  await setSeenBase(data?.last_seen_at ?? now); // first visit ever: nothing counts as new
+  await db().from("member_accounts").update({ last_seen_at: now }).eq("member_id", me.id);
 }
 
 /* ---------- leader side ---------- */

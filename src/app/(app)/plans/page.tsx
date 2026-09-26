@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Lightbulb, Plus, TrendingUp } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { addDays, daysLeft, diffDays, displayStatus, dueLabel, monthEnd, monthOf, monthStart, shiftMonth, type PlanStatus } from "@/lib/rules";
@@ -49,6 +49,22 @@ export default function PlansPage() {
   const mentors = d.processId ? activeMembers.filter((m) => m.id !== d.memberId && (s.skills[m.id]?.[d.processId]?.level ?? 0) >= 3) : [];
 
   const startNew = (preset?: Partial<Draft>) => { setD({ ...blank, ...preset }); setErr(""); setOpen(true); };
+
+  // PRD v3 F-1504: "/plans?member=…&process=…" (from a member's "Ingin belajar proses" voice) opens the form prefilled.
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search);
+    const memberId = q.get("member"), processId = q.get("process");
+    if (!memberId || !processId) return;
+    // the URL is an external source: open the dialog after this commit, not during it.
+    // Query is dropped inside the timer so a Strict Mode re-run (cleared timer) still sees it.
+    const t = setTimeout(() => {
+      window.history.replaceState(null, "", "/plans");
+      if (activeMembers.some((m) => m.id === memberId) && processes.some((p) => p.id === processId))
+        startNew({ memberId, processId, note: "Dari voice member: ingin belajar proses ini." });
+    });
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   function create() {
     if (!d.memberId || !d.processId) return setErr("Pilih member dan proses.");
     if (curLevel !== null && Number(d.targetLevel) <= curLevel) return setErr(`Target harus di atas level sekarang (${curLevel}/4).`);

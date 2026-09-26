@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, type ReactNode } from "react";
 import { CalendarDays, CircleUser, GraduationCap, House, MessageCircle, X, type LucideIcon } from "lucide-react";
 import { cn } from "@/components/ui";
+import { beginVisit } from "@/app/actions";
 
 /** Page chrome: brand eyebrow + title. Sits under the safe area, not fixed, so nothing hides content. */
 export function MemberHeader({ title, right }: { title: string; right?: ReactNode }) {
@@ -31,6 +32,12 @@ const TABS: Tab[] = [
   { href: "/me/cuti", label: "Cuti", icon: CalendarDays },
   { href: "/me/akun", label: "Akun", icon: CircleUser },
 ];
+
+/** F-1503: records the visit once per tab session; the server keeps the previous visit as the "Baru" baseline. */
+export function VisitTracker() {
+  useEffect(() => { beginVisit().catch(() => {}); }, []);
+  return null;
+}
 
 /** `voiceBadge`: leader replies the member has not opened yet (F-1305). */
 export function Dock({ voiceBadge = 0 }: { voiceBadge?: number }) {

@@ -35,6 +35,9 @@ export function EmptyNote({ children }: { children: ReactNode }) {
 
 export const levelLabel = (l: number) => `${l ? `${l}/4 · ` : ""}${LEVEL_TEXT[l]}`;
 
+/** F-1503: set by the leader since the member's previous visit. */
+export const NewChip = () => <Chip className="bg-m-red-fixed text-brand-strong">Baru</Chip>;
+
 /** F-1204: one improvement plan. Amber card like the refs' "Rencana Peningkatan". */
 export function PlanCard({ p }: { p: PortalPlan }) {
   const done = p.status === "ACHIEVED";
@@ -42,7 +45,7 @@ export function PlanCard({ p }: { p: PortalPlan }) {
     <article className={`rounded-[26px] p-5 ${done ? "bg-white" : "bg-m-amber"} shadow-[0_8px_24px_-4px_rgba(18,19,26,0.06)]`}>
       <div className="flex items-start justify-between gap-2">
         <h3 className="text-[17px] font-bold leading-snug">{p.processName}</h3>
-        <Chip className={CHIP[p.status]}>{PLAN_STATUS[p.status].label}</Chip>
+        <span className="flex shrink-0 gap-1">{p.isNew && <NewChip />}<Chip className={CHIP[p.status]}>{PLAN_STATUS[p.status].label}</Chip></span>
       </div>
       <div className="mt-3 flex items-center gap-2 rounded-2xl bg-white/70 px-3 py-2 text-[13px] font-semibold">
         <SkillDot level={p.fromLevel} size={22} /><span>{levelLabel(p.fromLevel)}</span>
@@ -60,13 +63,13 @@ export function PlanCard({ p }: { p: PortalPlan }) {
 }
 
 /** F-1205: one training row with the same reminder window as the leader views. */
-export function TrainingRow({ t, today, reminderDays }: { t: { name: string; trainedAt: ISODate | null; expiresAt: ISODate | null }; today: ISODate; reminderDays: number }) {
+export function TrainingRow({ t, today, reminderDays }: { t: { name: string; trainedAt: ISODate | null; expiresAt: ISODate | null; isNew?: boolean }; today: ISODate; reminderDays: number }) {
   const alert = trainingAlert(t.expiresAt, today, reminderDays);
   return (
     <li className="flex items-center gap-3 px-4 py-3.5">
       <span className={`grid size-10 shrink-0 place-items-center rounded-2xl ${alert ? "bg-m-red-fixed text-brand-strong" : "bg-m-sky-soft text-[#1d4a8c]"}`}><Award size={19} aria-hidden /></span>
       <span className="min-w-0 flex-1">
-        <b className="block text-[14px] leading-snug">{t.name}</b>
+        <b className="flex items-center gap-1.5 text-[14px] leading-snug">{t.name}{t.isNew && <NewChip />}</b>
         <span className="text-[12px] text-m-sub">
           {t.trainedAt ? `Ikut ${fmtDate(t.trainedAt)}` : "Tanggal belum dicatat"}
           {t.expiresAt ? ` · berlaku s/d ${fmtDate(t.expiresAt)}` : " · tanpa masa berlaku"}

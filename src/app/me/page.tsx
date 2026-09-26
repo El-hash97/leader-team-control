@@ -53,7 +53,10 @@ export default async function MemberHome() {
 
       <Link href="/me/skill" className="relative mt-5 block overflow-hidden rounded-[26px] bg-brand p-6 text-white shadow-[0_12px_28px_-8px_rgba(200,0,26,0.45)] transition active:scale-[0.99]">
         <div aria-hidden className="pointer-events-none absolute -bottom-10 -right-8 size-36 rounded-full bg-white/15 blur-sm" />
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1 text-[11px] font-semibold"><span className="size-1.5 rounded-full bg-white" />Ringkasan keahlian</span>
+        <span className="flex flex-wrap gap-1.5">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1 text-[11px] font-semibold"><span className="size-1.5 rounded-full bg-white" />Ringkasan keahlian</span>
+          {p.newCount > 0 && <span className="rounded-full bg-white px-3 py-1 text-[11px] font-bold text-brand-strong">{p.newCount} pembaruan baru</span>}
+        </span>
         <h3 className="mt-3 text-[22px] font-bold leading-tight tracking-tight">{mastered} dari {ids.length} proses dikuasai</h3>
         <p className="text-[12px] text-white/85">Level 3/4 (mandiri) ke atas</p>
         <div className="relative mt-4">

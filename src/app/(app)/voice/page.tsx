@@ -1,7 +1,8 @@
 "use client";
 // PRD v3 M13 leader side: inbox (F-1303), open = read + reply once (F-1304).
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { ImageIcon, LoaderCircle, MessageSquareText, Search, Send, ShieldAlert } from "lucide-react";
+import { ImageIcon, LoaderCircle, MessageSquareText, Search, Send, ShieldAlert, TrendingUp } from "lucide-react";
 import { listVoices, openVoice, replyVoice, type LeaderVoice } from "@/app/inbox-actions";
 import { announceInboxChange } from "@/components/use-inbox";
 import { VOICE_CATEGORIES, VOICE_CATEGORY, VOICE_STATUS, type VoiceCategory } from "@/components/voice-meta";
@@ -126,7 +127,17 @@ function VoiceDialog({ v, onClose, onChanged }: { v: LeaderVoice; onClose: () =>
         </div>
         <span className={cn("ml-auto rounded px-2 py-0.5 text-xs font-semibold", VOICE_CATEGORY[v.category].chip)}>{VOICE_CATEGORY[v.category].label}</span>
       </div>
-      {v.processName && <p className="mt-3 rounded-md bg-info-soft px-3 py-2 text-sm">Minat belajar proses: <b>{v.processName}</b></p>}
+      {v.processName && (
+        <p className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-md bg-info-soft px-3 py-2 text-sm">
+          <span>Minat belajar proses: <b>{v.processName}</b></span>
+          {/* F-1504: one click to a prefilled improvement plan */}
+          {v.category === "BELAJAR" && v.processId && (
+            <Link href={`/plans?member=${v.memberId}&process=${v.processId}`} className="inline-flex min-h-9 items-center gap-1.5 rounded-md bg-white px-3 font-semibold text-info hover:bg-info/10">
+              <TrendingUp size={15} />Jadikan rencana
+            </Link>
+          )}
+        </p>
+      )}
       <p className="mt-3 whitespace-pre-line text-[15px] leading-relaxed">{v.body}</p>
       {v.hasPhoto && (photo
         // eslint-disable-next-line @next/next/no-img-element

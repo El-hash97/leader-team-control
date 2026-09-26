@@ -22,6 +22,13 @@ export function MemberInboxCard({ memberId }: { memberId: string }) {
       <CardHeader icon={MessagesSquare} accent="red" title="Voice & cuti" desc="5 terakhir dari portal member" />
       {!data ? <p className="px-5 py-3 text-sm text-muted">Memuat…</p> : (
         <div className="divide-y divide-line text-sm">
+          {/* F-1504: learning wishes, one click to a prefilled plan */}
+          {[...new Map(data.voices.filter((v) => v.category === "BELAJAR" && v.processId).map((v) => [v.processId, v])).values()].map((v) => (
+            <div key={`want-${v.processId}`} className="flex items-center gap-2 bg-info-soft/60 px-4 py-2.5 sm:px-5">
+              <span className="min-w-0 flex-1">Minat belajar: <b>{v.processName}</b></span>
+              <Link href={`/plans?member=${memberId}&process=${v.processId}`} className="font-semibold text-info hover:underline">Jadikan rencana</Link>
+            </div>
+          ))}
           {data.voices.map((v) => (
             <Link key={v.id} href="/voice" className="flex items-start gap-2 px-4 py-2.5 hover:bg-rowhover sm:px-5">
               <span className="min-w-0 flex-1"><b className="block">{VOICE_CATEGORY[v.category].label}{v.processName ? ` · ${v.processName}` : ""}</b><span className="line-clamp-1 text-muted">{v.body}</span></span>

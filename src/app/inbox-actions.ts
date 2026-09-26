@@ -164,7 +164,7 @@ export async function inboxCounts(): Promise<{ voiceNew: number; voiceOpen: numb
 
 export type LeaderVoice = {
   id: string; memberId: string; memberName: string; noreg: string; photoUrl: string | null;
-  category: VoiceCategory; processName: string | null; body: string; hasPhoto: boolean;
+  category: VoiceCategory; processId: string | null; processName: string | null; body: string; hasPhoto: boolean;
   createdAt: string; readAt: string | null; reply: string | null; repliedAt: string | null; status: VoiceStatus;
 };
 
@@ -172,14 +172,14 @@ export type LeaderVoice = {
 export async function listVoices(): Promise<LeaderVoice[]> {
   if (!(await isAuthed())) return [];
   const { data } = await db().from("voices")
-    .select("id, member_id, category, body, has_photo, created_at, read_at, reply, replied_at, members(name, noreg, photo_url), processes(name)")
+    .select("id, member_id, category, process_id, body, has_photo, created_at, read_at, reply, replied_at, members(name, noreg, photo_url), processes(name)")
     .order("created_at", { ascending: false }).limit(500);
   const rank = (v: LeaderVoice) => (v.status === "REPLIED" ? 2 : v.category === "K3" ? 0 : 1);
   return (data ?? []).map((v): LeaderVoice => {
     const m = one<{ name: string; noreg: string; photo_url: string | null }>(v.members);
     return {
       id: v.id, memberId: v.member_id, memberName: m?.name ?? "-", noreg: m?.noreg ?? "", photoUrl: m?.photo_url ?? null,
-      category: v.category, processName: one<{ name: string }>(v.processes)?.name ?? null, body: v.body,
+      category: v.category, processId: v.process_id, processName: one<{ name: string }>(v.processes)?.name ?? null, body: v.body,
       hasPhoto: !!v.has_photo, createdAt: v.created_at, readAt: v.read_at, reply: v.reply, repliedAt: v.replied_at, status: voiceStatus(v),
     };
   }).sort((a, b) => rank(a) - rank(b));

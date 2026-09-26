@@ -41,6 +41,7 @@ export async function endSession() {
   const c = await cookies();
   c.delete(LEADER_COOKIE);
   c.delete(MEMBER_COOKIE);
+  c.delete("ltc_seen"); // next login starts a new visit (F-1503)
 }
 
 export async function isAuthed() {
@@ -66,6 +67,17 @@ export async function readMemberSession(): Promise<{ memberId: string; sessionVe
   const [memberId, ver, exp, sig] = parts;
   if (!same(sig, sign(`${memberId}.${ver}.${exp}`)) || Number(exp) <= Date.now() / 1000) return null;
   return { memberId, sessionVersion: Number(ver) };
+}
+
+// PRD v3 F-1503: "what counts as new" is frozen for one visit (8 h) so badges survive page changes.
+// Not a secret (only a timestamp), so it is not signed; a forged value only changes which items say "Baru".
+const SEEN_COOKIE = "ltc_seen";
+export async function readSeenBase(): Promise<string | null> {
+  const v = (await cookies()).get(SEEN_COOKIE)?.value;
+  return v && !Number.isNaN(Date.parse(v)) ? v : null;
+}
+export async function setSeenBase(iso: string) {
+  (await cookies()).set(SEEN_COOKIE, iso, cookieOpts(8 * 60 * 60));
 }
 
 /* ---------- secrets ---------- */

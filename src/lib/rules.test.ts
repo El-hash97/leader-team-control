@@ -5,7 +5,7 @@ import {
   groupWorkdays, memberWorkdays, performance, tenure, dueLabel, daysLeft,
   isMultiSkill, overallLevel, backupCount, displayStatus, monthEnd, addMonths, contractKind, contractEndFor,
   isMemberLogin, nextFailState, LOCK_MS, trainingAlert, attendanceSummary,
-  workdayList, leaveOverlaps, backupShortfall, voiceStatus,
+  workdayList, leaveOverlaps, backupShortfall, voiceStatus, isNewSince, replyWorkdays, median,
 } from "./rules.ts";
 
 const WD = [1, 2, 3, 4, 5];
@@ -98,4 +98,20 @@ test("leave: workdays, overlap, backup shortfall; voice status", () => {
   assert.equal(voiceStatus({ read_at: null, replied_at: null }), "SENT");
   assert.equal(voiceStatus({ read_at: "x", replied_at: null }), "READ");
   assert.equal(voiceStatus({ read_at: "x", replied_at: "y" }), "REPLIED");
+});
+
+test("new since last visit", () => {
+  assert.equal(isNewSince("2026-09-27T05:00:00+00:00", "2026-09-27T04:00:00.000Z"), true);
+  assert.equal(isNewSince("2026-09-27T03:00:00+00:00", "2026-09-27T04:00:00.000Z"), false);
+  assert.equal(isNewSince("2026-09-27T05:00:00+00:00", null), false);
+  assert.equal(isNewSince(null, "2026-09-27T04:00:00.000Z"), false);
+});
+
+test("voice reply time", () => {
+  assert.equal(replyWorkdays("2026-09-25", "2026-09-25", WD), 0);
+  assert.equal(replyWorkdays("2026-09-25", "2026-09-28", WD), 1); // Fri -> Mon
+  assert.equal(replyWorkdays("2026-09-25", "2026-09-29", WD, ["2026-09-28"]), 1);
+  assert.equal(median([]), null);
+  assert.equal(median([3, 1, 2]), 2);
+  assert.equal(median([1, 2, 3, 4]), 2.5);
 });

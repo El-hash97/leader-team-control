@@ -190,3 +190,18 @@ export function backupShortfall(
 export type VoiceStatus = "SENT" | "READ" | "REPLIED";
 export const voiceStatus = (v: { read_at: string | null; replied_at: string | null }): VoiceStatus =>
   v.replied_at ? "REPLIED" : v.read_at ? "READ" : "SENT";
+
+// PRD v3 F-1503: newer than the member's previous visit. No baseline (first visit ever) = nothing is "new".
+// Compares instants, not strings: Postgres "+00:00" and JS "Z" timestamps sort differently as text.
+export const isNewSince = (when: string | null | undefined, base: string | null) =>
+  !!when && !!base && Date.parse(when) > Date.parse(base);
+
+// PRD v3 F-1502 / KPI: working days between a voice and its reply; a same-day reply is 0.
+export const replyWorkdays = (sent: ISODate, replied: ISODate, workWeekdays: number[], holidays: ISODate[] = []) =>
+  groupWorkdays(addDays(sent, 1), replied, workWeekdays, holidays);
+
+export function median(values: number[]): number | null {
+  if (!values.length) return null;
+  const s = [...values].sort((a, b) => a - b), m = Math.floor(s.length / 2);
+  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+}

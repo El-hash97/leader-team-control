@@ -5,7 +5,7 @@ import { fmtDate } from "@/lib/format";
 import { SkillDot } from "@/components/ui";
 import { MemberHeader } from "@/components/member-ui";
 import { mCard } from "@/components/member-style";
-import { Chip, EmptyNote, levelLabel, PlanCard, SectionTitle, TrainingRow } from "@/components/member-parts";
+import { Chip, EmptyNote, levelLabel, NewChip, PlanCard, SectionTitle, TrainingRow } from "@/components/member-parts";
 import { LEVEL_TEXT } from "@/components/plan-meta";
 
 // F-1203 skill per process + history, F-1204 plans, F-1205 trainings. Ref: skill-me.html. Read-only.
@@ -59,13 +59,13 @@ export default async function MemberSkill() {
       <SectionTitle title="Skill per proses" aside="Garis putus-putus = belum capai target" />
       {p.processes.length ? (
         <ul className="space-y-2.5">
-          {p.processes.map(({ id, name, cell }) => {
+          {p.processes.map(({ id, name, cell, isNew }) => {
             const gap = cell.target != null ? cell.target - cell.level : null;
             return (
               <li key={id} className={`${mCard} flex items-center gap-3 px-4 py-3.5`}>
                 <SkillDot level={cell.level} target={cell.target} size={30} />
                 <span className="min-w-0 flex-1">
-                  <b className="block text-[15px] leading-snug">{name}</b>
+                  <b className="flex items-center gap-1.5 text-[15px] leading-snug">{name}{isNew && <NewChip />}</b>
                   <span className="text-[12px] text-m-sub">{levelLabel(cell.level)}</span>
                 </span>
                 {gap != null && (gap > 0
@@ -103,7 +103,7 @@ export default async function MemberSkill() {
             <li key={l.id} className="relative flex gap-3 pb-4 last:pb-0">
               <span className={`relative mt-1 size-3 shrink-0 rounded-full ring-4 ${i === 0 ? "bg-brand ring-m-red-fixed" : "bg-[#c9ccd1] ring-white"}`} />
               <div className="min-w-0">
-                <p className="text-[12px] text-m-sub">{fmtDate(l.date)}</p>
+                <p className="flex items-center gap-1.5 text-[12px] text-m-sub">{fmtDate(l.date)}{l.isNew && <NewChip />}</p>
                 <p className="text-[14px] font-bold leading-snug">{l.processName}</p>
                 <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[12px] font-semibold">
                   <SkillDot level={l.from} size={16} />{l.from}/4<ArrowRight size={12} className="text-m-sub" aria-label="naik ke" /><SkillDot level={l.to} size={16} />{l.to}/4 · {LEVEL_TEXT[l.to]}
