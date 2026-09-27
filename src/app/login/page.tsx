@@ -2,13 +2,13 @@
 /* Hallmark · page: login · genre: atmospheric · tone: luxury dark
  * theme: custom (vibe: "showroom night, ember red, ivory paper")
  * paper oklch(0.975 0.008 80) · night oklch(0.17 0.012 25) · accent Toyota red
- * type: Instrument Serif (display, roman) + Manrope (UI)
- * motion: mark draw-on (DrawSVG) · headline line reveal (SplitText) · field stagger · error shake
+ * type: Fraunces (display, roman) + Manrope (UI)
+ * motion: mark draw-on (DrawSVG) · headline word-by-word reveal (SplitText) · field stagger · error shake
  */
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState, type FormEvent } from "react";
-import { Instrument_Serif, Manrope } from "next/font/google";
+import { Fraunces, Manrope } from "next/font/google";
 import { ArrowRight, Check, Eye, EyeOff, LoaderCircle } from "lucide-react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
@@ -20,7 +20,7 @@ import { cn } from "@/components/ui";
 
 gsap.registerPlugin(useGSAP, SplitText, DrawSVGPlugin);
 
-const display = Instrument_Serif({ weight: "400", subsets: ["latin"], variable: "--font-instrument", display: "swap" });
+const display = Fraunces({ weight: ["400", "500"], style: ["normal"], subsets: ["latin"], variable: "--font-fraunces", display: "swap" });
 const ui = Manrope({ subsets: ["latin"], variable: "--font-manrope", display: "swap" });
 
 const LADDER = ["Belum", "Paham teori", "Dibantu", "Mandiri", "Mengajar"];
@@ -66,10 +66,9 @@ export default function LoginPage() {
         .from("[data-field]", { y: 22, autoAlpha: 0, duration: 0.7, stagger: 0.07 }, 0.45);
 
       SplitText.create(title.current, {
-        type: "lines",
-        mask: "lines",
+        type: "words",
         autoSplit: true,
-        onSplit: (self) => gsap.from(self.lines, { yPercent: 110, duration: 1.1, stagger: 0.1, ease: "power4.out", delay: 0.2 }),
+        onSplit: (self) => gsap.from(self.words, { yPercent: 130, autoAlpha: 0, duration: 0.9, stagger: 0.12, ease: "power4.out", delay: 0.2 }),
       });
     });
   }, { scope: root });
@@ -131,7 +130,7 @@ export default function LoginPage() {
 
         <div data-exit className="max-w-xl">
           <h1 ref={title} className="font-display text-[clamp(3.1rem,8.5vw,6.75rem)] font-normal leading-[0.94] tracking-[-0.02em] [overflow-wrap:anywhere]">
-            Dari bisa, menjadi <span className="text-brand">mahir.</span>
+            From Beginner, To <span className="text-brand">Expert.</span>
           </h1>
           <p data-fade className="mt-5 max-w-md text-[15px] leading-relaxed text-mist">
             Skill map per proses, rencana peningkatan member, dan absensi harian grup Finishing Line dalam satu tempat.
