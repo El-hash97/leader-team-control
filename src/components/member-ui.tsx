@@ -4,22 +4,70 @@
  * Rules from the refs: 26px cards, no dark borders, floating dark pill dock, near-black text on pastel. */
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, type ReactNode } from "react";
-import { CalendarDays, CircleUser, GraduationCap, House, MessageCircle, X, type LucideIcon } from "lucide-react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Bell, CalendarDays, CircleUser, GraduationCap, House, MessageCircle, X, type LucideIcon } from "lucide-react";
 import { cn } from "@/components/ui";
+import { LtcMark } from "@/components/ltc-mark";
 import { beginVisit } from "@/app/actions";
 
-/** Page chrome: brand eyebrow + title. Sits under the safe area, not fixed, so nothing hides content. */
-export function MemberHeader({ title, right }: { title: string; right?: ReactNode }) {
+/** Page title for screen readers only: the top bar carries the brand, the dock shows where you are. */
+export function MemberHeader({ title }: { title: string }) {
+  return <h1 className="sr-only">{title}</h1>;
+}
+
+export type MemberNotice = { href: string; text: string };
+
+/** Black top bar: LTC mark + "Mapping Skills", bell with unread dot, account shortcut. */
+export function MemberTopBar({ notices }: { notices: MemberNotice[] }) {
+  const [open, setOpen] = useState(false);
+  const box = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const outside = (e: MouseEvent) => !box.current?.contains(e.target as Node) && setOpen(false);
+    const esc = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    document.addEventListener("mousedown", outside);
+    document.addEventListener("keydown", esc);
+    return () => { document.removeEventListener("mousedown", outside); document.removeEventListener("keydown", esc); };
+  }, [open]);
+
+  const icon = "relative grid size-11 place-items-center rounded-full text-white/85 transition-colors hover:bg-white/10 hover:text-white";
   return (
-    <header className="flex items-center justify-between pb-4 pt-[max(env(safe-area-inset-top),16px)]">
-      <div>
-        <p className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wider text-m-sub">
-          <span className="size-2 rounded-full bg-brand" />TMMIN · Finishing Line
-        </p>
-        <h1 className="mt-0.5 text-base font-bold tracking-tight text-m-text">{title}</h1>
+    <header className="sticky top-0 z-40 bg-m-dock pt-[env(safe-area-inset-top)] text-white shadow-[0_2px_12px_rgba(0,0,0,0.25)]">
+      <div className="mx-auto flex h-16 w-full max-w-md items-center justify-between gap-3 px-4">
+        <Link href="/me" className="flex min-w-0 items-center gap-2.5" aria-label="Mapping Skills, ke Beranda">
+          <LtcMark tone="dark" size={36} />
+          <span className="min-w-0 leading-tight">
+            <span className="block truncate text-[16px] font-bold tracking-tight">Mapping Skills</span>
+            <span className="block truncate text-[11px] font-medium text-white/55">Finishing Line</span>
+          </span>
+        </Link>
+        <div className="flex shrink-0 items-center gap-1" ref={box}>
+          <div className="relative">
+            <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-haspopup="true"
+              aria-label={notices.length ? `Notifikasi, ${notices.length} baru` : "Notifikasi"} className={icon}>
+              <Bell size={22} aria-hidden />
+              {notices.length > 0 && <span aria-hidden className="absolute right-2.5 top-2.5 size-2.5 rounded-full bg-brand ring-2 ring-m-dock" />}
+            </button>
+            {open && (
+              <div className="absolute right-0 top-12 w-72 overflow-hidden rounded-[22px] bg-white text-m-text shadow-[0_16px_40px_rgba(18,19,26,0.28)]">
+                <p className="border-b border-m-low px-4 py-3 text-[13px] font-bold">Notifikasi</p>
+                {notices.length ? (
+                  <ul className="divide-y divide-m-low">
+                    {notices.map((n) => (
+                      <li key={n.href + n.text}>
+                        <Link href={n.href} onClick={() => setOpen(false)} className="flex items-start gap-2.5 px-4 py-3 text-[13px] leading-snug hover:bg-m-low">
+                          <span aria-hidden className="mt-1.5 size-2 shrink-0 rounded-full bg-brand" />{n.text}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                ) : <p className="px-4 py-5 text-center text-[13px] text-m-sub">Tidak ada notifikasi baru.</p>}
+              </div>
+            )}
+          </div>
+          <Link href="/me/akun" aria-label="Akun" className={icon}><CircleUser size={24} aria-hidden /></Link>
+        </div>
       </div>
-      {right}
     </header>
   );
 }

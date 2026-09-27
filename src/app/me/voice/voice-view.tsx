@@ -26,7 +26,7 @@ export function VoiceView({ voices, processes }: { voices: MemberVoice[]; proces
 
   return (
     <>
-      <p className="-mt-2 mb-4 text-[13px] text-m-sub">Sampaikan saran, keluhan, temuan K3, atau minat belajar proses langsung ke leader.</p>
+      <p className="mb-4 text-[13px] text-m-sub">Sampaikan saran, keluhan, temuan K3, atau minat belajar proses langsung ke leader.</p>
 
       <section className="relative overflow-hidden rounded-[26px] bg-brand p-5 text-white shadow-[0_12px_28px_-8px_rgba(200,0,26,0.45)]">
         <div className="flex items-start justify-between gap-3">

@@ -12,6 +12,8 @@ export type PortalPlan = {
 /** `isNew` / `newCount`: changed by the leader since the member's previous visit (PRD v3 F-1503). */
 export type Portal = {
   today: ISODate; reminderDays: number; newCount: number;
+  /** previous-visit baseline for "new" (null on the very first visit) */
+  base: string | null;
   processes: { id: string; name: string; cell: Cell; isNew: boolean }[];
   logs: { id: string; processName: string; from: number; to: number; date: ISODate; note: string; isNew: boolean }[];
   plans: PortalPlan[];
@@ -72,7 +74,7 @@ export const loadPortal = cache(async (memberId: string): Promise<Portal> => {
     .sort((a, b) => (a.expiresAt ?? "9999").localeCompare(b.expiresAt ?? "9999"));
 
   return {
-    today, month,
+    today, month, base,
     reminderDays: must(settings, "settings")?.reminder_days ?? 90,
     newCount: logRows.filter((l) => l.isNew).length + planList.filter((p) => p.isNew).length + trainList.filter((t) => t.isNew).length,
     processes: procs.filter((p) => p.active).map((p) => ({ id: p.id, name: p.name, cell: cells.get(p.id) ?? { level: 0, target: null }, isNew: newProcs.has(p.id) })),
