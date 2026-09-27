@@ -4,17 +4,18 @@ import { useParams } from "next/navigation";
 import { useState } from "react";
 import { CalendarCheck, ChevronLeft, GraduationCap, Grid3x3, History, Pencil, TrendingUp } from "lucide-react";
 import { useStore } from "@/lib/store";
-import { daysLeft, displayStatus, dueLabel, monthOf, shiftMonth, tenure } from "@/lib/rules";
+import { addMonths, daysLeft, displayStatus, dueLabel, monthOf, shiftMonth, tenure } from "@/lib/rules";
 import { fmtDate, fmtMonth } from "@/lib/format";
-import { Avatar, Badge, Button, Card, CardHeader, EmptyState, KelasBadge, LEVEL_TEXT, PerfValue, SkillDot } from "@/components/ui";
+import { Avatar, Badge, Button, Card, CardHeader, Dialog, EmptyState, KelasBadge, LEVEL_TEXT, PerfValue, SkillDot } from "@/components/ui";
 import { MemberDialog } from "@/components/member-dialog";
 import { AccountCard, MemberInboxCard } from "@/components/account-card";
 import { PLAN_STATUS } from "@/components/plan-meta";
 
 export default function MemberDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const { s, today, multi, monthly, processes } = useStore();
+  const { s, today, multi, monthly, processes, saveMember, setActive, toast } = useStore();
   const [edit, setEdit] = useState(false);
+  const [contractOpen, setContractOpen] = useState(false);
   const m = s.members.find((x) => x.id === id);
 
   if (!m) {
@@ -33,6 +34,30 @@ export default function MemberDetailPage() {
   const pname = (pid: string) => s.processes.find((p) => p.id === pid)?.name ?? "-";
   const months = [0, -1, -2].map((n) => shiftMonth(monthOf(today), n));
   const contractDays = m.contractEnd && emp?.hasContract ? daysLeft(m.contractEnd, today) : null;
+  const isPkwt = emp?.name === "PKWT";
+  const isPkwt2 = pos === "PKWT 2";
+  const contractActionable = isPkwt && contractDays !== null && contractDays < 90;
+
+  function extendContract() {
+    if (!m || !m.contractEnd) return;
+    saveMember({ ...m, contractEnd: addMonths(m.contractEnd, 12) });
+    toast("Kontrak diperpanjang 1 tahun.");
+    setContractOpen(false);
+  }
+  function makePermanent() {
+    if (!m) return;
+    const permanentId = s.empStatuses.find((e) => e.name === "Karyawan Tetap")?.id;
+    if (!permanentId) return;
+    saveMember({ ...m, statusId: permanentId, contractEnd: null });
+    toast("Status diubah menjadi Karyawan Tetap.");
+    setContractOpen(false);
+  }
+  function endContract() {
+    if (!m) return;
+    setActive(m.id, false);
+    toast("Kontrak diakhiri, member dinonaktifkan.");
+    setContractOpen(false);
+  }
 
   return (
     <>
@@ -57,10 +82,22 @@ export default function MemberDetailPage() {
             ["Kelas", m.kelas ?? "Vokasi (tanpa kelas)"],
             ["Join date", fmtDate(m.joinDate)],
             ["Masa kerja", tenure(m.joinDate, today)],
-            ["Akhir kontrak", emp?.hasContract ? `${fmtDate(m.contractEnd)}${contractDays !== null && contractDays <= s.settings.reminderDays ? ` · ${dueLabel(contractDays)}` : ""}` : "-"],
           ].map(([k, v]) => (
             <div key={k} className="bg-white px-4 py-3"><dt className="text-xs text-muted">{k}</dt><dd className="tabular mt-0.5 text-sm font-semibold">{v}</dd></div>
           ))}
+          <div className="bg-white px-4 py-3">
+            <dt className="text-xs text-muted">Akhir kontrak</dt>
+            <dd className="tabular mt-0.5 text-sm font-semibold">
+              {!emp?.hasContract ? "-" : contractActionable ? (
+                <button type="button" onClick={() => setContractOpen(true)}
+                  className="underline decoration-dotted underline-offset-2 hover:text-brand-strong">
+                  {fmtDate(m.contractEnd)}{contractDays !== null && contractDays <= s.settings.reminderDays ? ` · ${dueLabel(contractDays)}` : ""}
+                </button>
+              ) : (
+                <>{fmtDate(m.contractEnd)}{contractDays !== null && contractDays <= s.settings.reminderDays ? ` · ${dueLabel(contractDays)}` : ""}</>
+              )}
+            </dd>
+          </div>
         </dl>
         {m.notes && <p className="border-t border-line px-5 py-3 text-sm text-muted">{m.notes}</p>}
       </Card>
@@ -162,6 +199,21 @@ export default function MemberDetailPage() {
       </div>
 
       <MemberDialog open={edit} member={m} onClose={() => setEdit(false)} />
+
+      <Dialog open={contractOpen} onClose={() => setContractOpen(false)} title="Akhir kontrak">
+        <div className="space-y-3 p-5">
+          <p className="text-sm text-muted">
+            Kontrak {m.name} berakhir {fmtDate(m.contractEnd)}
+            {contractDays !== null ? ` · ${dueLabel(contractDays)}` : ""}.
+          </p>
+          {isPkwt2 ? (
+            <Button variant="primary" className="w-full" onClick={makePermanent}>Jadikan Karyawan Tetap</Button>
+          ) : (
+            <Button variant="primary" className="w-full" onClick={extendContract}>Perpanjang 1 Tahun</Button>
+          )}
+          <Button variant="danger" className="w-full" onClick={endContract}>Akhiri Kontrak</Button>
+        </div>
+      </Dialog>
     </>
   );
 }
