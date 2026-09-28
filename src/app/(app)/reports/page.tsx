@@ -32,13 +32,10 @@ function Reports() {
 }
 
 function Performance() {
-  const { s, today, monthly, toast, sortMembers } = useStore();
+  const { s, today, monthly, toast } = useStore();
   const [month, setMonth] = useState(monthOf(today));
   const rows = monthly(month);
   const scored = rows.filter((r) => r.perf !== null);
-  // "Monthly control" tabel ikut urutan Data Member (hierarki lalu join date); rows/scored di atas
-  // tetap urut performance untuk kartu rata-rata/tertinggi/terendah dan export CSV.
-  const tableRows = [...rows].sort((a, b) => sortMembers(a.member, b.member));
   const avg = scored.length ? Math.round(scored.reduce((a, r) => a + (r.perf ?? 0), 0) / scored.length) : 0;
   const end = [monthEnd(month), today].sort()[0];
   const groupDays = groupWorkdays(monthStart(month), end, s.settings.workWeekdays, s.holidays);
@@ -91,7 +88,7 @@ function Performance() {
               <tr>{["#", "Member", "Posisi", "Hari kerja", "Hadir", "Dinas", "Training", "Sakit", "Cuti", "Izin", "Alpa", "Performance"].map((h, i) => <th key={h} className={cn("px-3 py-2.5", i > 2 && "text-right", i === 0 && "pl-4")}>{h}</th>)}</tr>
             </thead>
             <tbody className="tabular divide-y divide-line">
-              {tableRows.map((r, i) => (
+              {rows.map((r, i) => (
                 <tr key={r.member.id}>
                   <td className="py-2 pl-4 pr-3 text-muted">{i + 1}</td>
                   <td className="px-3"><b className="block">{r.member.name}</b><span className="text-xs text-muted">{r.member.noreg}</span></td>
