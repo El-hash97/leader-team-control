@@ -10,12 +10,24 @@ export function db() {
   return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
 }
 
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+// Supabase occasionally rejects a fresh request with "JWT issued at future" due to
+// clock skew between its own edge nodes; it's transient and clears itself within ~1s.
+async function selectPage(table: string, from: number) {
+  for (let attempt = 0; ; attempt++) {
+    const { data, error } = await db().from(table).select("*").range(from, from + 999);
+    if (!error) return data;
+    if (attempt >= 2 || !error.message.includes("JWT issued at future")) throw new Error(`${table}: ${error.message}`);
+    await sleep(400 * (attempt + 1));
+  }
+}
+
 // PostgREST returns at most 1000 rows per request, so page through big tables (attendance grows daily).
 async function selectAll(table: string): Promise<Row[]> {
   const out: Row[] = [];
   for (let from = 0; ; from += 1000) {
-    const { data, error } = await db().from(table).select("*").range(from, from + 999);
-    if (error) throw new Error(`${table}: ${error.message}`);
+    const data = await selectPage(table, from);
     out.push(...data);
     if (data.length < 1000) return out;
   }
