@@ -115,3 +115,17 @@ test("voice reply time", () => {
   assert.equal(median([3, 1, 2]), 2);
   assert.equal(median([1, 2, 3, 4]), 2.5);
 });
+
+test("supabase retry policy", async () => {
+  const { shouldRetry } = await import("./retry.ts");
+  const jwt = "{\"code\":\"PGRST303\",\"message\":\"JWT issued at future\"}";
+  assert.equal(shouldRetry({ method: "GET", status: 401, body: jwt, attempt: 0 }), true);
+  assert.equal(shouldRetry({ method: "POST", status: 401, body: jwt, attempt: 0 }), true); // rejected before running
+  assert.equal(shouldRetry({ method: "GET", networkError: true, attempt: 1 }), true);
+  assert.equal(shouldRetry({ method: "GET", status: 503, attempt: 3 }), true);
+  assert.equal(shouldRetry({ method: "GET", status: 503, attempt: 4 }), false); // out of attempts
+  assert.equal(shouldRetry({ method: "POST", networkError: true, attempt: 0 }), false); // write may have landed
+  assert.equal(shouldRetry({ method: "PATCH", status: 500, attempt: 0 }), false);
+  assert.equal(shouldRetry({ method: "GET", status: 400, attempt: 0 }), false);
+  assert.equal(shouldRetry({ method: "GET", status: 401, body: "{\"message\":\"Invalid API key\"}", attempt: 0 }), false);
+});
