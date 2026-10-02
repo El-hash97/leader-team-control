@@ -4,18 +4,17 @@ import { useState } from "react";
 import { Grid3x3, Search, ShieldAlert, Target, Users } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { countAtLeast } from "@/lib/rules";
-import { Badge, Button, Card, Dialog, EmptyState, Field, KelasBadge, LEVEL_TEXT, PageHeader, SkillDot, SkillLegend, Stat, cn, inputCls } from "@/components/ui";
+import { Badge, Button, Card, Dialog, EmptyState, Field, LEVEL_TEXT, PageHeader, SkillDot, SkillLegend, Stat, cn, inputCls } from "@/components/ui";
 
 type Sel = { memberId: string; processId: string } | null;
 
 export default function SkillMapPage() {
   const { s, today, activeMembers, processes, pids, levels, multi, multiSkillRate, backup, setLevel, setTarget, toast } = useStore();
   const [q, setQ] = useState("");
-  const [lv, setLv] = useState("all");
   const [sel, setSel] = useState<Sel>(null);
   const [draft, setDraft] = useState({ level: 0, target: "" as string, date: today, note: "" });
 
-  const list = activeMembers.filter((m) => (lv === "all" || (lv === "V" ? !m.kelas : m.kelas?.[0] === lv)) && `${m.name} ${m.noreg}`.toLowerCase().includes(q.toLowerCase()));
+  const list = activeMembers.filter((m) => `${m.name} ${m.noreg}`.toLowerCase().includes(q.toLowerCase()));
   const gaps = activeMembers.reduce((n, m) => n + processes.filter((p) => { const c = s.skills[m.id]?.[p.id]; return c?.target != null && c.target > c.level; }).length, 0);
   const trainingCount = (id: string) => s.memberTrainings.filter((t) => t.memberId === id).length;
 
@@ -59,11 +58,6 @@ export default function SkillMapPage() {
               <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
               <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Cari member" className={cn(inputCls, "pl-9")} />
             </label>
-            <select aria-label="Filter kelas" value={lv} onChange={(e) => setLv(e.target.value)} className={cn(inputCls, "sm:w-auto")}>
-              <option value="all">Semua kelas</option>
-              {["3", "4", "5", "6"].map((l) => <option key={l} value={l}>Kelas {l}A–{l}C</option>)}
-              <option value="V">Vokasi</option>
-            </select>
           </div>
           <SkillLegend />
         </div>
@@ -77,8 +71,7 @@ export default function SkillMapPage() {
                   <tr className="text-xs font-semibold text-violet">
                     <th className="sticky left-0 z-10 border-b border-line bg-violet-soft px-3 py-2.5 text-left sm:px-4">Member</th>
                     {processes.map((p) => <th key={p.id} className="border-b border-line bg-violet-soft px-1 py-2.5 text-center">{p.name}</th>)}
-                    <th className="border-b border-l border-line bg-violet-soft px-3 text-center">Kelas</th>
-                    <th className="border-b border-line bg-violet-soft px-3 text-center">≥ 3/4</th>
+                    <th className="border-b border-l border-line bg-violet-soft px-3 text-center">≥ 3/4</th>
                     <th className="border-b border-line bg-violet-soft px-3 text-center">Multi-skill</th>
                     <th className="border-b border-line bg-violet-soft px-3 text-center">Training</th>
                   </tr>
@@ -101,8 +94,7 @@ export default function SkillMapPage() {
                           </td>
                         );
                       })}
-                      <td className="border-b border-l border-line px-3 text-center"><KelasBadge kelas={m.kelas} /></td>
-                      <td className="tabular border-b border-line px-3 text-center">{countAtLeast(levels(m.id), pids, 3)}</td>
+                      <td className="tabular border-b border-l border-line px-3 text-center">{countAtLeast(levels(m.id), pids, 3)}</td>
                       <td className="border-b border-line px-3 text-center">{multi(m.id) ? <Badge tone="good">Ya</Badge> : <span className="text-xs text-muted">Belum</span>}</td>
                       <td className="tabular border-b border-line px-3 text-center">{trainingCount(m.id)}</td>
                     </tr>

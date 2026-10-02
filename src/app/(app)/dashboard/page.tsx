@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { Activity, ArrowRight, Award, CalendarCheck, CalendarRange, CalendarX, CircleAlert, FileClock, GraduationCap, Layers, LayoutDashboard, Medal, MessageSquareText, Network, ShieldAlert, Target, UserCheck, Users } from "lucide-react";
+import { Activity, ArrowRight, CalendarCheck, CalendarRange, CalendarX, CircleAlert, FileClock, GraduationCap, Layers, LayoutDashboard, Medal, MessageSquareText, Network, ShieldAlert, Target, UserCheck, Users } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { useInbox } from "@/components/use-inbox";
 import { displayStatus, dueLabel, monthOf, rate } from "@/lib/rules";
@@ -43,13 +43,6 @@ export default function DashboardPage() {
   const contractCount = alerts.filter((a) => a.kind === "contract").length;
   const overdue = s.plans.filter((p) => displayStatus(p, today) === "OVERDUE").length;
   const unsafe = backup.filter((b) => !b.ok);
-  const kelasRows = [
-    { key: "3", label: "3A–3C", fill: "bg-teal" },
-    { key: "4", label: "4A–4C", fill: "bg-info" },
-    { key: "5", label: "5A–5C", fill: "bg-violet" },
-    { key: "6", label: "6A–6C", fill: "bg-[#b07a00]" },
-    { key: null, label: "Vokasi", fill: "bg-muted" },
-  ].map((k) => ({ ...k, n: activeMembers.filter((m) => (k.key ? m.kelas?.[0] === k.key : !m.kelas)).length }));
   const trend: { label: string; value: number; live?: boolean }[] = [...s.snapshots]
     .sort((a, b) => a.month.localeCompare(b.month))
     .map((x) => ({ label: fmtMonthShort(x.month), value: x.multiSkillRate }));
@@ -179,20 +172,7 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-        <Card>
-          <CardHeader icon={Award} accent="blue" title="Komposisi kelas" desc="Member aktif per kelas" />
-          <div className="space-y-3 p-4 sm:p-5">
-            {kelasRows.map((k) => (
-              <div key={k.label} className="grid grid-cols-[64px_1fr_56px] items-center gap-3 text-sm">
-                <span className="tabular font-semibold">{k.label}</span>
-                <Bar value={rate(k.n, activeMembers.length)} fill={k.fill} />
-                <span className="tabular text-right text-muted">{k.n} org</span>
-              </div>
-            ))}
-          </div>
-        </Card>
-
+      <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
         <Card>
           <CardHeader icon={Layers} accent="violet" title="Cadangan per proses" desc={`Orang ≥ 3/4, minimal ${s.settings.defaultMinBackup}`}
             action={<Link href="/skill-map" className="inline-flex min-h-10 items-center gap-1 text-sm font-semibold text-brand-strong">Skill map<ArrowRight size={15} /></Link>} />
@@ -206,7 +186,7 @@ export default function DashboardPage() {
           </ul>
         </Card>
 
-        <Card className="md:col-span-2 xl:col-span-1">
+        <Card>
           <CardHeader icon={Network} accent="blue" title="Hirarki grup" desc="Member aktif per posisi" />
           <ul className="zebra-list divide-y divide-line">
             {[...s.positions].sort((a, b) => a.order - b.order).map((p) => (

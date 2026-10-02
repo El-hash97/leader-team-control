@@ -16,7 +16,7 @@ export default async function MemberAccount() {
   const today = todayJakarta();
   const rows: [string, string][] = [
     ["Status karyawan", me.status || "-"],
-    ["Kelas", me.kelas ?? "Tanpa kelas"],
+    ["Posisi", me.position || "-"],
     ["Masa kerja", tenure(me.joinDate, today)],
     [me.contractEnd ? "Akhir kontrak" : "Tanggal masuk", fmtDate(me.contractEnd ?? me.joinDate)],
   ];

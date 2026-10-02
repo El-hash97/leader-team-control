@@ -46,8 +46,8 @@ function Performance() {
   const emp = Object.fromEntries(s.empStatuses.map((p) => [p.id, p.name]));
 
   function exportCsv() {
-    const head = ["Rank", "NoReg", "Nama", "Posisi", "Status", "Kelas", "Join Date", "Total Record", "Hadir", "Dinas", "Training", "Sakit", "Cuti", "Izin", "Alpa", "Performance"];
-    const body = rows.map((r, i) => [i + 1, r.member.noreg, r.member.name, pos[r.member.positionId], emp[r.member.statusId], r.member.kelas ?? "Vokasi", r.member.joinDate,
+    const head = ["Rank", "NoReg", "Nama", "Posisi", "Status", "Join Date", "Total Record", "Hadir", "Dinas", "Training", "Sakit", "Cuti", "Izin", "Alpa", "Performance"];
+    const body = rows.map((r, i) => [i + 1, r.member.noreg, r.member.name, pos[r.member.positionId], emp[r.member.statusId], r.member.joinDate,
       r.records, r.hadir, r.dinas, r.training, r.sakit, r.cuti, r.izin, r.alpa, r.perf === null ? "-" : `${r.perf}%`]);
     const csv = [head, ...body].map((row) => row.map((v) => `"${String(v).replaceAll('"', '""')}"`).join(",")).join("\n");
     const a = document.createElement("a");

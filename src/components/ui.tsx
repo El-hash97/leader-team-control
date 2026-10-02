@@ -82,14 +82,6 @@ export function PageHeader({ title, desc, actions, icon, accent }: { title: stri
   );
 }
 
-const kelasTone: Record<string, string> = {
-  "3": "bg-teal-soft text-teal", "4": "bg-info-soft text-info", "5": "bg-violet-soft text-violet", "6": "bg-warn-soft text-warn",
-};
-export function KelasBadge({ kelas }: { kelas: string | null }) {
-  if (!kelas) return <span className="inline-flex rounded px-2 py-0.5 text-xs font-semibold text-muted ring-1 ring-line">Vokasi</span>;
-  return <span className={cn("tabular inline-flex min-w-9 justify-center rounded px-2 py-0.5 text-xs font-bold", kelasTone[kelas[0]])}>{kelas}</span>;
-}
-
 type Tone = "neutral" | "good" | "warn" | "bad" | "info" | "brand";
 const toneCls: Record<Tone, string> = {
   neutral: "bg-soft text-ink",

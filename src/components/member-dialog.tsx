@@ -2,19 +2,19 @@
 import { useState } from "react";
 import { Camera } from "lucide-react";
 import { useStore } from "@/lib/store";
-import { KELAS, type Kelas, type Member } from "@/lib/types";
+import type { Member } from "@/lib/types";
 import { contractEndFor, contractKind, contractMonthsFor } from "@/lib/rules";
 import { compressAvatar } from "@/lib/image";
 import { Avatar, Button, Dialog, Field, inputCls } from "./ui";
 
-type Errors = Partial<Record<"name" | "noreg" | "kelas" | "joinDate" | "contractEnd" | "photo", string>>;
+type Errors = Partial<Record<"name" | "noreg" | "joinDate" | "contractEnd" | "photo", string>>;
 
 /** F-301/F-302: add or edit a member. `member` null = new. */
 export function MemberDialog({ open, member, onClose }: { open: boolean; member: Member | null; onClose: () => void }) {
   const { s, today, saveMember, toast } = useStore();
   const blank: Member = {
     id: "", name: "", noreg: "", positionId: s.positions.find((p) => p.name === "Team Member")?.id ?? s.positions[0].id,
-    statusId: s.empStatuses[0].id, kelas: "3A", joinDate: today, contractEnd: null, photoUrl: null, notes: "", active: true, deactivatedAt: null,
+    statusId: s.empStatuses[0].id, joinDate: today, contractEnd: null, photoUrl: null, notes: "", active: true, deactivatedAt: null,
   };
   const [f, setF] = useState<Member>(member ?? blank);
   const [errors, setErrors] = useState<Errors>({});
@@ -24,7 +24,6 @@ export function MemberDialog({ open, member, onClose }: { open: boolean; member:
 
   const status = s.empStatuses.find((e) => e.id === f.statusId);
   const hasContract = status?.hasContract ?? false;
-  const isVokasi = status?.name === "Vokasi";
   const kindOf = (m: Member) => contractKind(
     s.empStatuses.find((e) => e.id === m.statusId)?.name ?? "",
     s.positions.find((p) => p.id === m.positionId)?.name ?? "",
@@ -43,14 +42,13 @@ export function MemberDialog({ open, member, onClose }: { open: boolean; member:
     if (!f.name.trim()) e.name = "Nama wajib diisi.";
     if (!f.noreg.trim()) e.noreg = "NoReg wajib diisi.";
     else if (s.members.some((m) => m.noreg.trim().toLowerCase() === f.noreg.trim().toLowerCase() && m.id !== f.id)) e.noreg = "NoReg tersebut sudah terdaftar.";
-    if (!isVokasi && !f.kelas) e.kelas = "Pilih kelas member.";
     if (!f.joinDate) e.joinDate = "Join date wajib diisi.";
     if (hasContract && !f.contractEnd) e.contractEnd = "Akhir kontrak wajib untuk PKWT/Vokasi.";
     else if (hasContract && f.contractEnd && f.contractEnd < f.joinDate) e.contractEnd = "Akhir kontrak tidak boleh sebelum join date.";
     setErrors(e);
     if (Object.keys(e).length) return;
     const isNew = !f.id;
-    saveMember({ ...f, id: f.id || `m${Date.now()}`, name: f.name.trim(), noreg: f.noreg.trim(), contractEnd: hasContract ? f.contractEnd : null, kelas: isVokasi ? null : f.kelas });
+    saveMember({ ...f, id: f.id || `m${Date.now()}`, name: f.name.trim(), noreg: f.noreg.trim(), contractEnd: hasContract ? f.contractEnd : null });
     toast(isNew ? "Member baru berhasil ditambahkan." : "Data member berhasil diperbarui.");
     onClose();
   }
@@ -97,13 +95,6 @@ export function MemberDialog({ open, member, onClose }: { open: boolean; member:
         <Field label="Status karyawan *">
           <select className={inputCls} value={f.statusId} onChange={(e) => set("statusId", e.target.value)}>
             {s.empStatuses.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-          </select>
-        </Field>
-        <Field label={isVokasi ? "Kelas" : "Kelas *"} error={errors.kelas} hint={isVokasi ? "Vokasi tidak memiliki kelas." : undefined}>
-          <select className={inputCls} disabled={isVokasi} value={isVokasi ? "" : f.kelas ?? ""} onChange={(e) => set("kelas", (e.target.value || null) as Kelas | null)}>
-            {isVokasi && <option value="">Tidak ada kelas</option>}
-            {!isVokasi && !f.kelas && <option value="">Pilih kelas</option>}
-            {KELAS.map((k) => <option key={k} value={k}>{k}</option>)}
           </select>
         </Field>
         <Field label="Join date *" error={errors.joinDate}>

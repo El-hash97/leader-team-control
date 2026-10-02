@@ -1,16 +1,12 @@
 import type { ContractMonths, ISODate, PlanStatus, AttCategory } from "./rules";
 
-// Employee class (golongan). Vokasi has no class.
-export const KELAS = ["3A", "3B", "3C", "4A", "4B", "4C", "5A", "5B", "5C", "6A", "6B", "6C"] as const;
-export type Kelas = (typeof KELAS)[number];
-
 export type Position = { id: string; name: string; order: number };
 export type EmpStatus = { id: string; name: string; hasContract: boolean };
 export type AttStatus = { id: string; name: string; category: AttCategory };
 export type Process = { id: string; name: string; order: number; minBackup: number | null; active: boolean };
 export type Training = { id: string; name: string; hasExpiry: boolean; order: number };
 export type Member = {
-  id: string; name: string; noreg: string; positionId: string; statusId: string; kelas: Kelas | null;
+  id: string; name: string; noreg: string; positionId: string; statusId: string;
   joinDate: ISODate; contractEnd: ISODate | null; photoUrl: string | null; notes: string;
   active: boolean; deactivatedAt: ISODate | null;
 };

@@ -4,7 +4,6 @@ import { CalendarX, Check, ChevronDown, ChevronUp, Database, Download, FileClock
 import { useStore } from "@/lib/store";
 import { fmtDate } from "@/lib/format";
 import { Badge, Button, Card, CardHeader, Dialog, Field, PageHeader, cn, inputCls } from "@/components/ui";
-import { KELAS } from "@/lib/types";
 import { contractEndFor } from "@/lib/rules";
 
 const EXAMPLE_JOIN = "2026-01-01";
@@ -288,7 +287,6 @@ export default function SettingsPage() {
           <CardHeader icon={ListChecks} accent="teal" title="Master data lain" desc="Edit penuh tersedia setelah backend terhubung." />
           <div className="space-y-4 p-4 sm:p-5">
             {[
-              ["Kelas", [...KELAS, "Vokasi: tanpa kelas"]],
               ["Posisi (urutan hirarki)", [...s.positions].sort((a, b) => a.order - b.order).map((x) => x.name)],
               ["Status karyawan", s.empStatuses.map((x) => `${x.name}${x.hasContract ? " · kontrak" : ""}`)],
               ["Status absensi", s.attStatuses.map((x) => `${x.name} · ${CAT[x.category]}`)],

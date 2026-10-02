@@ -2,7 +2,7 @@
 // Shared by the server loader and the client-side save builders.
 import type { AttCategory, PlanStatus } from "./rules";
 import {
-  attKey, type Kelas, type Member, type MemberTraining, type Plan, type PlanMethod, type Process, type Training,
+  attKey, type Member, type MemberTraining, type Plan, type PlanMethod, type Process, type Training,
   type Settings, type SkillLog, type Snapshot, type State,
 } from "./types";
 
@@ -35,7 +35,7 @@ export function toState(t: Tables): State {
     trainings: [...t.trainings].sort((a, b) => a.sort - b.sort).map((r) => ({ id: r.id, name: r.name, hasExpiry: r.has_expiry, order: r.sort })),
     processes: t.processes.map((r): Process => ({ id: r.id, name: r.name, order: r.sort, minBackup: r.min_backup, active: r.active })),
     members: t.members.map((r): Member => ({
-      id: r.id, name: r.name, noreg: r.noreg, positionId: r.position_id, statusId: r.status_id, kelas: r.kelas as Kelas | null,
+      id: r.id, name: r.name, noreg: r.noreg, positionId: r.position_id, statusId: r.status_id,
       joinDate: r.join_date, contractEnd: r.contract_end, photoUrl: r.photo_url, notes: r.notes, active: r.active, deactivatedAt: r.deactivated_at,
     })),
     skills,
@@ -62,7 +62,7 @@ export function toState(t: Tables): State {
 
 // ---------- app → row ----------
 export const memberRow = (m: Member): Row => ({
-  id: m.id, name: m.name, noreg: m.noreg, position_id: m.positionId, status_id: m.statusId, kelas: m.kelas,
+  id: m.id, name: m.name, noreg: m.noreg, position_id: m.positionId, status_id: m.statusId,
   join_date: m.joinDate, contract_end: m.contractEnd, photo_url: m.photoUrl, notes: m.notes, active: m.active, deactivated_at: m.deactivatedAt,
 });
 export const processRow = (p: Process): Row => ({ id: p.id, name: p.name, sort: p.order, min_backup: p.minBackup, active: p.active });

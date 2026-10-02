@@ -6,7 +6,7 @@ import { CalendarCheck, ChevronLeft, GraduationCap, Grid3x3, History, Pencil, Tr
 import { useStore } from "@/lib/store";
 import { addMonths, daysLeft, displayStatus, dueLabel, monthOf, shiftMonth, tenure } from "@/lib/rules";
 import { fmtDate, fmtMonth } from "@/lib/format";
-import { Avatar, Badge, Button, Card, CardHeader, Dialog, EmptyState, KelasBadge, LEVEL_TEXT, PerfValue, SkillDot } from "@/components/ui";
+import { Avatar, Badge, Button, Card, CardHeader, Dialog, EmptyState, LEVEL_TEXT, PerfValue, SkillDot } from "@/components/ui";
 import { MemberDialog } from "@/components/member-dialog";
 import { AccountCard, MemberInboxCard } from "@/components/account-card";
 import { PLAN_STATUS } from "@/components/plan-meta";
@@ -69,7 +69,6 @@ export default function MemberDetailPage() {
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-xl font-bold">{m.name}</h1>
-              <KelasBadge kelas={m.kelas} />
               {!m.active && <Badge>Nonaktif</Badge>}
               {multi(m.id) && <Badge tone="good">Multi-skill</Badge>}
             </div>
@@ -79,7 +78,7 @@ export default function MemberDetailPage() {
         </div>
         <dl className="grid grid-cols-2 gap-px border-t border-line bg-line sm:grid-cols-4">
           {[
-            ["Kelas", m.kelas ?? "Vokasi (tanpa kelas)"],
+            ["Status", emp?.name ?? "-"],
             ["Join date", fmtDate(m.joinDate)],
             ["Masa kerja", tenure(m.joinDate, today)],
           ].map(([k, v]) => (

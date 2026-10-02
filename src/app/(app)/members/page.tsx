@@ -1,12 +1,12 @@
 "use client";
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { Award, BadgeCheck, FileClock, GraduationCap, Pencil, Plus, Search, Smartphone, UserCheck, Users, UserX } from "lucide-react";
+import { BadgeCheck, FileClock, GraduationCap, Pencil, Plus, Search, Smartphone, UserCheck, Users, UserX } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { daysLeft, dueLabel, tenure } from "@/lib/rules";
 import { fmtDate } from "@/lib/format";
 import type { Member } from "@/lib/types";
-import { Avatar, Badge, Button, Card, Dialog, EmptyState, KelasBadge, PageHeader, Stat, cn, inputCls } from "@/components/ui";
+import { Avatar, Badge, Button, Card, Dialog, EmptyState, PageHeader, Stat, cn, inputCls } from "@/components/ui";
 import { MemberDialog } from "@/components/member-dialog";
 import { AccountMark, accountKind, useAccounts } from "@/components/account-card";
 
@@ -25,7 +25,7 @@ export default function MembersPage() {
   const acc = new Map(accounts?.map((a) => [a.memberId, a]));
   const list = s.members
     .filter((m) => (showInactive ? true : m.active))
-    .filter((m) => `${m.name} ${m.noreg} ${pos[m.positionId]} ${emp[m.statusId]?.name} ${m.kelas ?? ""}`.toLowerCase().includes(q.toLowerCase()))
+    .filter((m) => `${m.name} ${m.noreg} ${pos[m.positionId]} ${emp[m.statusId]?.name}`.toLowerCase().includes(q.toLowerCase()))
     .sort((a, b) => Number(b.active) - Number(a.active) || sortMembers(a, b));
 
   const statusTone = (id: string) => (emp[id]?.name === "Karyawan Tetap" ? "neutral" : emp[id]?.name === "PKWT" ? "info" : "warn");
@@ -44,15 +44,14 @@ export default function MembersPage() {
 
   return (
     <>
-      <PageHeader title="Data Member" desc="Database member, kelas, masa kerja, dan kontrak." icon={Users} accent="blue"
+      <PageHeader title="Data Member" desc="Database member, masa kerja, dan kontrak." icon={Users} accent="blue"
         actions={<Button variant="primary" onClick={openNew}><Plus size={17} />Tambah member</Button>} />
 
-      <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+      <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         <Stat label="Total aktif" value={active.length} icon={Users} accent="blue" />
         <Stat icon={BadgeCheck} accent="green" label="Tetap" value={active.filter((m) => emp[m.statusId]?.name === "Karyawan Tetap").length} />
         <Stat icon={FileClock} accent="amber" label="PKWT" value={active.filter((m) => emp[m.statusId]?.name === "PKWT").length} />
         <Stat icon={GraduationCap} accent="teal" label="Vokasi" value={active.filter((m) => emp[m.statusId]?.name === "Vokasi").length} />
-        <Stat icon={Award} accent="violet" label="Kelas 5–6" value={active.filter((m) => m.kelas && +m.kelas[0] >= 5).length} />
         <Stat icon={Smartphone} accent="red" label="Akun aplikasi aktif"
           value={accounts ? `${active.filter((m) => accountKind(acc.get(m.id)) === "active").length}/${active.length}` : "…"} />
       </div>
@@ -62,7 +61,7 @@ export default function MembersPage() {
           <label className="relative block sm:w-80">
             <span className="sr-only">Cari member</span>
             <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
-            <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Cari nama, NoReg, posisi, kelas" className={cn(inputCls, "pl-9")} />
+            <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Cari nama, NoReg, posisi" className={cn(inputCls, "pl-9")} />
           </label>
           <label className="inline-flex min-h-10 items-center gap-2 text-sm">
             <input type="checkbox" checked={showInactive} onChange={(e) => setShowInactive(e.target.checked)} className="size-4 accent-[var(--color-brand-strong)]" />
@@ -81,7 +80,7 @@ export default function MembersPage() {
                 <thead className="bg-info-soft text-left text-xs font-semibold text-info">
                   <tr>
                     <th className="px-4 py-2.5">Member</th><th className="px-3 py-2.5">Posisi</th><th className="px-3 py-2.5">Status</th>
-                    <th className="px-3 py-2.5">Kelas</th><th className="px-3 py-2.5">Join</th><th className="px-3 py-2.5">Kontrak</th>
+                    <th className="px-3 py-2.5">Join</th><th className="px-3 py-2.5">Kontrak</th>
                     <th className="px-3 py-2.5">Masa kerja</th><th className="px-3 py-2.5 text-right">Aksi</th>
                   </tr>
                 </thead>
@@ -96,7 +95,6 @@ export default function MembersPage() {
                       </td>
                       <td className="px-3">{pos[m.positionId]}</td>
                       <td className="px-3">{m.active ? <Badge tone={statusTone(m.statusId)}>{emp[m.statusId]?.name}</Badge> : <Badge>Nonaktif</Badge>}</td>
-                      <td className="px-3"><KelasBadge kelas={m.kelas} /></td>
                       <td className="tabular px-3">{fmtDate(m.joinDate)}</td>
                       <td className="px-3">{contract(m)}</td>
                       <td className="tabular px-3">{tenure(m.joinDate, today)}</td>
@@ -128,8 +126,7 @@ export default function MembersPage() {
                     </Link>
                     {m.active ? <Badge tone={statusTone(m.statusId)}>{emp[m.statusId]?.name}</Badge> : <Badge>Nonaktif</Badge>}
                   </div>
-                  <dl className="mt-2 grid grid-cols-3 gap-2 pl-[52px] text-xs">
-                    <div><dt className="text-muted">Kelas</dt><dd><KelasBadge kelas={m.kelas} /></dd></div>
+                  <dl className="mt-2 grid grid-cols-2 gap-2 pl-[52px] text-xs">
                     <div><dt className="text-muted">Masa kerja</dt><dd className="tabular">{tenure(m.joinDate, today)}</dd></div>
                     <div><dt className="text-muted">Kontrak</dt><dd>{contract(m)}</dd></div>
                   </dl>

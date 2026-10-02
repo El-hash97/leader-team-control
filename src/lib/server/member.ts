@@ -90,7 +90,7 @@ export const loadPortal = cache(async (memberId: string): Promise<Portal> => {
 
 export type MemberProfile = {
   id: string; name: string; noreg: string; photoUrl: string | null;
-  position: string; status: string; kelas: string | null; joinDate: string; contractEnd: string | null;
+  position: string; status: string; joinDate: string; contractEnd: string | null;
 };
 
 // PRD v3 §8: the single gate for every member page and action. memberId comes from the signed cookie only,
@@ -104,7 +104,7 @@ export const requireMember = cache(async (): Promise<MemberProfile | null> => {
   if (!acc || acc.session_version !== s.sessionVersion) return null;
   const { data: m } = await client
     .from("members")
-    .select("id, name, noreg, photo_url, kelas, join_date, contract_end, active, position_id, status_id")
+    .select("id, name, noreg, photo_url, join_date, contract_end, active, position_id, status_id")
     .eq("id", s.memberId)
     .maybeSingle();
   if (!m || !m.active) return null;
@@ -113,7 +113,7 @@ export const requireMember = cache(async (): Promise<MemberProfile | null> => {
     client.from("emp_statuses").select("name").eq("id", m.status_id).maybeSingle(),
   ]);
   return {
-    id: m.id, name: m.name, noreg: m.noreg, photoUrl: m.photo_url, kelas: m.kelas, joinDate: m.join_date, contractEnd: m.contract_end,
+    id: m.id, name: m.name, noreg: m.noreg, photoUrl: m.photo_url, joinDate: m.join_date, contractEnd: m.contract_end,
     position: pos.data?.name ?? "", status: emp.data?.name ?? "",
   };
 });
