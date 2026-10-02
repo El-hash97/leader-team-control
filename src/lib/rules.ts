@@ -45,10 +45,11 @@ export function lastWorkday(d: ISODate, workWeekdays: number[], holidays: ISODat
   return d;
 }
 
-export type WorkCfg ={ workWeekdays: number[]; holidays: ISODate[]; today: ISODate };
+// start: attendance start date; workdays before it are not counted (nothing was recorded then)
+export type WorkCfg = { workWeekdays: number[]; holidays: ISODate[]; today: ISODate; start?: ISODate };
 
 export function memberWorkdays(month: string, m: { joinDate: ISODate; deactivatedAt?: ISODate | null }, cfg: WorkCfg): number {
-  const from = [monthStart(month), m.joinDate].sort()[1];
+  const from = [monthStart(month), m.joinDate, cfg.start ?? "0000-01-01"].sort()[2];
   const to = [monthEnd(month), cfg.today, m.deactivatedAt ?? "9999-12-31"].sort()[0];
   return groupWorkdays(from, to, cfg.workWeekdays, cfg.holidays);
 }
@@ -204,4 +205,19 @@ export function median(values: number[]): number | null {
   if (!values.length) return null;
   const s = [...values].sort((a, b) => a - b), m = Math.floor(s.length / 2);
   return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+}
+
+/** Quick attendance: working days in [from, to] where a member who was employed that day has no record.
+ *  Inactive members count only up to their deactivation date. Oldest day first. */
+export function missedWorkdays(
+  members: { id: string; joinDate: ISODate; active: boolean; deactivatedAt: ISODate | null }[],
+  has: (date: ISODate, memberId: string) => boolean,
+  from: ISODate, to: ISODate, workWeekdays: number[], holidays: ISODate[] = [],
+): { date: ISODate; memberIds: string[] }[] {
+  return workdayList(from, to, workWeekdays, holidays).flatMap((date) => {
+    const memberIds = members
+      .filter((m) => (m.active || m.deactivatedAt) && m.joinDate <= date && (!m.deactivatedAt || date <= m.deactivatedAt) && !has(date, m.id))
+      .map((m) => m.id);
+    return memberIds.length ? [{ date, memberIds }] : [];
+  });
 }

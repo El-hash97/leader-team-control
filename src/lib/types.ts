@@ -25,6 +25,8 @@ export type Settings = {
   reminderDays: number; multiSkillMinProcesses: number; multiSkillMinLevel: number; defaultMinBackup: number;
   workWeekdays: number[]; qccTargetPct: number; qccBaselineDate: ISODate | null;
   contractMonths: ContractMonths;
+  /** first day attendance is recorded; earlier workdays are never "missed" nor counted in performance */
+  attendanceStartDate: ISODate;
 };
 
 export type State = {

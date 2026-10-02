@@ -1,11 +1,12 @@
 "use client";
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { CalendarCheck, CalendarRange, Check, Search } from "lucide-react";
+import { CalendarCheck, CalendarClock, CalendarRange, Check, Search } from "lucide-react";
 import { useStore } from "@/lib/store";
-import { isWorkday } from "@/lib/rules";
-import { fmtDateLong } from "@/lib/format";
-import { Avatar, Button, Card, Dialog, EmptyState, PageHeader, cn, inputCls } from "@/components/ui";
+import { addDays, isWorkday, type ISODate } from "@/lib/rules";
+import { fmtDate, fmtDateLong } from "@/lib/format";
+import { listLeaves } from "@/app/inbox-actions";
+import { Avatar, Button, Card, CardHeader, Dialog, EmptyState, PageHeader, cn, inputCls } from "@/components/ui";
 
 export default function AttendancePage() {
   return <Suspense><Attendance /></Suspense>;
@@ -38,6 +39,8 @@ function Attendance() {
           Tanggal ini bukan hari kerja. Absensi tetap bisa diisi, tapi tidak dihitung sebagai hari kerja di laporan.
         </p>
       )}
+
+      <MissedPanel onOpen={(d) => { setDate(d); window.scrollTo({ top: 0, behavior: "smooth" }); }} />
 
       {/* equal-width grid, every status always shown so the layout never shifts */}
       <div className="mb-3 grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6">
@@ -138,5 +141,73 @@ function Attendance() {
         <p className="text-sm">{empty.length} member yang belum diabsen akan diisi <b>{bulkName}</b>. Member yang sudah punya status tidak diubah.</p>
       </Dialog>
     </>
+  );
+}
+
+/** Quick attendance: past working days (since the attendance start date) that still have empty members.
+ *  Fills only empty cells, never overwrites, and skips members with a leave request still pending that day. */
+function MissedPanel({ onOpen }: { onOpen: (date: ISODate) => void }) {
+  const { s, missed, fillCells, toast } = useStore();
+  const [pending, setPending] = useState<Set<string> | null>(null); // "date|memberId" with a PENDING leave
+  const [confirm, setConfirm] = useState(false);
+  const [showAll, setShowAll] = useState(false);
+
+  useEffect(() => {
+    listLeaves().then((ls) => {
+      const set = new Set<string>();
+      for (const l of ls) if (l.status === "PENDING") for (let d = l.start; d <= l.end; d = addDays(d, 1)) set.add(`${d}|${l.memberId}`);
+      setPending(set);
+    }, () => setPending(new Set()));
+  }, []);
+
+  if (!missed.length) return null;
+  const hadirId = s.attStatuses.find((a) => a.name === "Hadir")!.id;
+  const days = missed.map(({ date, memberIds }) => ({
+    date,
+    fill: memberIds.filter((id) => !pending?.has(`${date}|${id}`)),
+    wait: memberIds.filter((id) => pending?.has(`${date}|${id}`)).length,
+  })).reverse(); // newest first
+  const cells = days.flatMap((d) => d.fill.map((memberId) => ({ date: d.date, memberId })));
+  const shown = showAll ? days : days.slice(0, 5);
+  const ready = pending !== null;
+
+  return (
+    <Card className="mb-4 border-warn/40">
+      <div id="kelewat" className="scroll-mt-24">
+        <CardHeader icon={CalendarClock} accent="amber" title={`${days.length} hari kerja belum lengkap`}
+          desc={`Sejak ${fmtDate(s.settings.attendanceStartDate)}. Hanya yang kosong yang diisi, status lain dan cuti tidak ditimpa.`}
+          action={<Button variant="primary" disabled={!ready || !cells.length} onClick={() => setConfirm(true)}><Check size={16} />Semua sisanya hadir</Button>} />
+      </div>
+      <ul className="divide-y divide-line">
+        {shown.map((d) => (
+          <li key={d.date} className="flex flex-wrap items-center gap-2 px-4 py-2.5 sm:px-5">
+            <span className="min-w-0 flex-1 text-sm">
+              <b className="block">{fmtDateLong(d.date)}</b>
+              <span className="text-muted">{d.fill.length + d.wait} belum diisi{d.wait ? ` · ${d.wait} menunggu keputusan cuti` : ""}</span>
+            </span>
+            <Button disabled={!ready || !d.fill.length} onClick={() => {
+              const n = fillCells(d.fill.map((memberId) => ({ date: d.date, memberId })), hadirId);
+              toast(`${n} member diisi Hadir pada ${fmtDate(d.date)}.`);
+            }}><Check size={15} />Sisanya hadir</Button>
+            <Button variant="ghost" onClick={() => onOpen(d.date)}>Buka</Button>
+          </li>
+        ))}
+      </ul>
+      {days.length > 5 && (
+        <button onClick={() => setShowAll((x) => !x)} className="w-full border-t border-line py-2.5 text-sm font-semibold text-brand-strong hover:bg-soft">
+          {showAll ? "Tampilkan lebih sedikit" : `Tampilkan semua (${days.length} hari)`}
+        </button>
+      )}
+
+      <Dialog open={confirm} onClose={() => setConfirm(false)} title="Isi semua sebagai Hadir?"
+        footer={<><Button onClick={() => setConfirm(false)}>Batal</Button>
+          <Button variant="primary" onClick={() => { const n = fillCells(cells, hadirId); toast(`${n} absensi diisi Hadir di ${days.filter((d) => d.fill.length).length} hari.`); setConfirm(false); }}>Isi {cells.length} absensi</Button></>}>
+        <p className="text-sm">
+          {cells.length} absensi kosong di {days.filter((d) => d.fill.length).length} hari kerja akan diisi <b>Hadir</b>.
+          Yang sudah punya status, termasuk cuti, tidak diubah. Member yang cutinya masih menunggu keputusan dilewati.
+        </p>
+        <p className="mt-2 text-sm text-muted">Kalau ada yang sakit, izin, atau cuti, ubah lewat tombol Buka di tanggal tersebut.</p>
+      </Dialog>
+    </Card>
   );
 }

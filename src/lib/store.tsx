@@ -8,7 +8,7 @@ import {
 } from "./db-map";
 import { loadState, save } from "@/app/actions";
 import {
-  todayJakarta, memberWorkdays, performance, isMultiSkill, backupCount, daysLeft,
+  todayJakarta, memberWorkdays, missedWorkdays, addDays, performance, isMultiSkill, backupCount, daysLeft,
   displayStatus, lastWorkday, rate, type LevelMap, type PlanStatus, type ISODate,
 } from "./rules";
 
@@ -92,7 +92,7 @@ function useStoreValue(initial: State) {
   const att = useCallback((date: ISODate, memberId: string) => s.attendance[attKey(date, memberId)], [s.attendance]);
 
   const monthly = useCallback((month: string): MonthlyRow[] => {
-    const wcfg = { workWeekdays: cfg.workWeekdays, holidays: s.holidays, today };
+    const wcfg = { workWeekdays: cfg.workWeekdays, holidays: s.holidays, today, start: cfg.attendanceStartDate };
     return activeMembers.map((m) => {
       const row: MonthlyRow = { member: m, records: 0, workdays: memberWorkdays(month, m, wcfg), fulfilled: 0, perf: null, hadir: 0, dinas: 0, training: 0, sakit: 0, cuti: 0, izin: 0, alpa: 0 };
       for (const [k, v] of Object.entries(s.attendance)) {
@@ -112,7 +112,11 @@ function useStoreValue(initial: State) {
       row.perf = performance(row.fulfilled, row.workdays);
       return row;
     }).sort((a, b) => (b.perf ?? -1) - (a.perf ?? -1) || a.member.name.localeCompare(b.member.name));
-  }, [activeMembers, s.attendance, s.holidays, statusById, cfg.workWeekdays, today]);
+  }, [activeMembers, s.attendance, s.holidays, statusById, cfg.workWeekdays, cfg.attendanceStartDate, today]);
+
+  // Quick attendance: workdays from the attendance start date up to yesterday with someone still empty.
+  const missed = useMemo(() => missedWorkdays(s.members, (d, id) => !!att(d, id), cfg.attendanceStartDate, addDays(today, -1), cfg.workWeekdays, s.holidays),
+    [s.members, att, cfg.attendanceStartDate, cfg.workWeekdays, s.holidays, today]);
 
   const alerts = useMemo((): Alert[] => {
     const out: Alert[] = [];
@@ -135,6 +139,11 @@ function useStoreValue(initial: State) {
       const pr = s.processes.find((x) => x.id === p.processId);
       if (m && pr) out.push({ kind: "plan", title: m.name, detail: `Rencana ${pr.name} lewat target`, days: daysLeft(p.dueDate, today), href: "/plans" });
     }
+    if (missed.length)
+      out.push({
+        kind: "attendance", title: `${missed.length} hari kerja belum lengkap`,
+        detail: "Ada tanggal yang terlewat diabsen", href: "/attendance#kelewat",
+      });
     const missing = activeMembers.filter((m) => !att(refDay, m.id)).length;
     if (missing)
       out.push({
@@ -143,7 +152,7 @@ function useStoreValue(initial: State) {
         href: `/attendance?date=${refDay}`,
       });
     return out.sort((a, b) => (a.days ?? -999) - (b.days ?? -999));
-  }, [activeMembers, s, today, refDay, cfg, att]);
+  }, [activeMembers, s, today, refDay, cfg, att, missed]);
 
   // ---------- actions ----------
   const cell = (st: State, memberId: string, processId: string) => st.skills[memberId]?.[processId] ?? { level: 0, target: null };
@@ -202,6 +211,15 @@ function useStoreValue(initial: State) {
     const hadir = st.attStatuses.find((a) => a.name === "Hadir")?.id ?? "as0";
     const rec = { statusId: prev?.statusId ?? hadir, note: note.trim() };
     commit({ ...st, attendance: { ...st.attendance, [k]: rec } }, [{ table: "attendance", upsert: [attRow(date, memberId, rec.statusId, rec.note)] }]);
+  };
+
+  /** Quick attendance across dates: fills only cells that are still empty, in one write. */
+  const fillCells = (cells: { date: ISODate; memberId: string }[], statusId: string) => {
+    const st = cur(), attendance = { ...st.attendance };
+    const todo = cells.filter((c) => !attendance[attKey(c.date, c.memberId)]);
+    for (const c of todo) attendance[attKey(c.date, c.memberId)] = { statusId, note: "" };
+    commit({ ...st, attendance }, todo.length ? [{ table: "attendance", upsert: todo.map((c) => attRow(c.date, c.memberId, statusId, "")) }] : []);
+    return todo.length;
   };
 
   // F-702: fills only members that have no record on that date
@@ -302,8 +320,8 @@ function useStoreValue(initial: State) {
 
   return {
     s, today, refDay, toasts, toast, reload, saving: saving > 0, activeMembers, processes, pids, levels, multi, multiSkillRate, backup,
-    statusById, att, monthly, alerts, sortMembers,
-    setLevel, setTarget, saveMember, setActive, setAttendance, setAttendanceNote, fillUnfilled, setMemberTraining, addPlan, setPlanStatus,
+    statusById, att, monthly, alerts, missed, sortMembers,
+    setLevel, setTarget, saveMember, setActive, setAttendance, setAttendanceNote, fillUnfilled, fillCells, setMemberTraining, addPlan, setPlanStatus,
     updateSettings, addProcess, updateProcess, moveProcess, addTraining, updateTraining, removeTraining, addHoliday, removeHoliday, takeBaseline,
   };
 }

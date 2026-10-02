@@ -129,3 +129,21 @@ test("supabase retry policy", async () => {
   assert.equal(shouldRetry({ method: "GET", status: 400, attempt: 0 }), false);
   assert.equal(shouldRetry({ method: "GET", status: 401, body: "{\"message\":\"Invalid API key\"}", attempt: 0 }), false);
 });
+
+test("quick attendance: missed workdays and start date", async () => {
+  const { missedWorkdays: missed } = await import("./rules.ts");
+  const members = [
+    { id: "a", joinDate: "2020-01-01", active: true, deactivatedAt: null },
+    { id: "b", joinDate: "2026-10-06", active: true, deactivatedAt: null }, // joins on Tue
+    { id: "c", joinDate: "2020-01-01", active: false, deactivatedAt: "2026-10-02" }, // left after Fri
+    { id: "d", joinDate: "2020-01-01", active: false, deactivatedAt: null }, // inactive, no date: never counted
+  ];
+  const filled = new Set(["2026-10-01|a", "2026-10-02|a", "2026-10-02|c"]);
+  const r = missed(members, (d, id) => filled.has(`${d}|${id}`), "2026-10-01", "2026-10-06", WD, ["2026-10-05"]);
+  // Thu 1: c empty · Fri 2: complete · Sat/Sun off · Mon 5 holiday · Tue 6: a, b empty (c already left)
+  assert.deepEqual(r, [{ date: "2026-10-01", memberIds: ["c"] }, { date: "2026-10-06", memberIds: ["a", "b"] }]);
+  assert.deepEqual(missed(members, () => true, "2026-10-01", "2026-10-06", WD), []);
+  // start date: September is before recording started, so no workdays and performance stays null
+  assert.equal(memberWorkdays("2026-09", { joinDate: "2020-01-01" }, { workWeekdays: WD, holidays: [], today: "2026-10-10", start: "2026-10-01" }), 0);
+  assert.equal(memberWorkdays("2026-10", { joinDate: "2020-01-01" }, { workWeekdays: WD, holidays: [], today: "2026-10-06", start: "2026-10-01" }), 4);
+});

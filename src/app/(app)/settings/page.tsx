@@ -82,6 +82,10 @@ export default function SettingsPage() {
                 <option value={3}>3/4 · Mandiri</option><option value={4}>4/4 · Bisa mengajar</option>
               </select>
             </Field>
+            <Field label="Mulai pencatatan absensi" hint="Hari kerja sebelumnya tidak dihitung kelewat maupun di performance">
+              <input type="date" required max={today} className={inputCls} value={p.attendanceStartDate}
+                onChange={(e) => e.target.value && setP({ ...p, attendanceStartDate: e.target.value })} />
+            </Field>
             <Field label="Cadangan minimal per proses" hint="Orang ≥ 3/4, bisa diubah per proses">
               <input type="number" min={1} max={10} className={inputCls} value={p.defaultMinBackup} onChange={(e) => setP({ ...p, defaultMinBackup: +e.target.value })} />
             </Field>
