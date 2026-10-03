@@ -45,12 +45,11 @@ export default async function MemberSkill() {
 
       <section className={`${mCard} mt-4 px-4 py-3`} aria-label="Arti simbol skill">
         <p className="text-[11px] font-semibold uppercase tracking-wider text-m-sub">Arti simbol</p>
-        <ul className="mt-2 grid grid-cols-5 gap-1 text-center">
-          {LEVEL_TEXT.map((t, l) => (
-            <li key={t} className="flex flex-col items-center gap-1">
+        <ul className="mt-2 grid grid-cols-4 gap-1 text-center">
+          {[1, 2, 3, 4].map((l) => (
+            <li key={l} className="flex flex-col items-center gap-1">
               <SkillDot level={l} size={22} />
               <span className="text-[10px] font-semibold leading-tight">{l}/4</span>
-              <span className="text-[10px] leading-tight text-m-sub">{t}</span>
             </li>
           ))}
         </ul>
