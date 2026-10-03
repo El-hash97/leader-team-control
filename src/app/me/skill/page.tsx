@@ -17,11 +17,7 @@ export default async function MemberSkill() {
   const count = (f: (l: number) => boolean) => levels.filter(f).length;
   const activePlans = p.plans.filter((x) => x.status !== "ACHIEVED");
   const donePlans = p.plans.filter((x) => x.status === "ACHIEVED");
-  const tiles: [string, number, number][] = [
-    ["Mandiri / mengajar", count((l) => l >= 3), 4],
-    ["Dengan bantuan", count((l) => l === 2), 2],
-    ["Belum / teori", count((l) => l <= 1), 1],
-  ];
+  const tiles: [number, number][] = [1, 2, 3, 4].map((l) => [l, count((x) => x === l)]);
 
   return (
     <>
@@ -32,12 +28,12 @@ export default async function MemberSkill() {
         <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1 text-[11px] font-semibold"><span className="size-1.5 rounded-full bg-white" />Skill map Toyota</span>
         <h2 className="mt-3 text-xl font-bold tracking-tight">Posisi skill saya</h2>
         <p className="text-[13px] text-white/85">{p.processes.length} proses di Finishing Line</p>
-        <div className="relative mt-5 grid grid-cols-3 gap-2 text-center text-m-text">
-          {tiles.map(([label, n, dot]) => (
-            <div key={label} className="flex flex-col items-center rounded-[18px] bg-white/95 px-2 py-3">
-              <SkillDot level={dot} size={20} />
+        <div className="relative mt-5 grid grid-cols-4 gap-2 text-center text-m-text">
+          {tiles.map(([l, n]) => (
+            <div key={l} className="flex flex-col items-center rounded-[18px] bg-white/95 px-2 py-3">
+              <SkillDot level={l} size={20} />
               <b className="mt-1 text-xl leading-none">{n}</b>
-              <span className="mt-1 text-[11px] leading-tight text-m-sub">{label}</span>
+              <span className="mt-1 text-[11px] leading-tight text-m-sub">{l}/4</span>
             </div>
           ))}
         </div>
@@ -45,11 +41,12 @@ export default async function MemberSkill() {
 
       <section className={`${mCard} mt-4 px-4 py-3`} aria-label="Arti simbol skill">
         <p className="text-[11px] font-semibold uppercase tracking-wider text-m-sub">Arti simbol</p>
-        <ul className="mt-2 grid grid-cols-4 gap-1 text-center">
-          {[1, 2, 3, 4].map((l) => (
-            <li key={l} className="flex flex-col items-center gap-1">
+        <ul className="mt-2 grid grid-cols-5 gap-1 text-center">
+          {LEVEL_TEXT.map((t, l) => (
+            <li key={t} className="flex flex-col items-center gap-1">
               <SkillDot level={l} size={22} />
               <span className="text-[10px] font-semibold leading-tight">{l}/4</span>
+              <span className="text-[10px] leading-tight text-m-sub">{t}</span>
             </li>
           ))}
         </ul>
