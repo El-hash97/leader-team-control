@@ -1,10 +1,10 @@
 "use client";
 import { useState } from "react";
-import { CalendarX, Check, ChevronDown, ChevronUp, Database, Download, FileClock, GraduationCap, Info, Layers, ListChecks, Pencil, Plus, Settings, SlidersHorizontal, Trash, Upload, X } from "lucide-react";
+import { CalendarX, Check, ChevronDown, Clock, ChevronUp, Database, Download, FileClock, GraduationCap, Info, Layers, ListChecks, Pencil, Plus, Settings, SlidersHorizontal, Trash, Upload, X } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { fmtDate } from "@/lib/format";
 import { Badge, Button, Card, CardHeader, Dialog, Field, PageHeader, cn, inputCls } from "@/components/ui";
-import { contractEndFor } from "@/lib/rules";
+import { addDays, contractEndFor, weekday } from "@/lib/rules";
 
 const EXAMPLE_JOIN = "2026-01-01";
 
@@ -33,6 +33,10 @@ export default function SettingsPage() {
   const [cm, setCm] = useState(s.settings.contractMonths);
   const cmDirty = JSON.stringify(cm) !== JSON.stringify(s.settings.contractMonths);
   const procs = [...s.processes].sort((a, b) => a.order - b.order);
+  // same rule as the DB function auto_fill_hadir: weeks counted from the anchor's Monday, even = morning
+  const monday = (d: string) => addDays(d, -((weekday(d) + 6) % 7));
+  const weeksFromAnchor = Math.round((Date.parse(monday(today)) - Date.parse(monday(s.settings.shiftAnchorDate))) / (7 * 864e5));
+  const morningWeek = ((weeksFromAnchor % 2) + 2) % 2 === 0;
 
   function exportJson() {
     const a = document.createElement("a");
@@ -86,6 +90,10 @@ export default function SettingsPage() {
               <input type="date" required max={today} className={inputCls} value={p.attendanceStartDate}
                 onChange={(e) => e.target.value && setP({ ...p, attendanceStartDate: e.target.value })} />
             </Field>
+            <Field label="Acuan minggu shift pagi" hint="Tanggal mana saja di minggu pagi. Minggu berikutnya malam, lalu bergantian">
+              <input type="date" required className={inputCls} value={p.shiftAnchorDate}
+                onChange={(e) => e.target.value && setP({ ...p, shiftAnchorDate: e.target.value })} />
+            </Field>
             <Field label="Cadangan minimal per proses" hint="Orang ≥ 3/4, bisa diubah per proses">
               <input type="number" min={1} max={10} className={inputCls} value={p.defaultMinBackup} onChange={(e) => setP({ ...p, defaultMinBackup: +e.target.value })} />
             </Field>
@@ -105,6 +113,21 @@ export default function SettingsPage() {
           <div className="flex justify-end gap-2 border-t border-line px-5 py-3">
             <Button disabled={!dirty} onClick={() => setP(s.settings)}>Batal</Button>
             <Button variant="primary" disabled={!dirty} onClick={() => { updateSettings({ ...p, contractMonths: s.settings.contractMonths }); toast("Parameter disimpan."); }}>Simpan parameter</Button>
+          </div>
+        </Card>
+
+        <Card>
+          <CardHeader icon={Clock} accent="teal" title="Absensi otomatis" desc="Hadir terisi sendiri di hari kerja, tinggal ditimpa kalau berbeda." />
+          <div className="space-y-3 p-4 text-sm sm:p-5">
+            <p className="flex flex-wrap items-center gap-2">
+              Minggu ini <Badge tone={morningWeek ? "good" : "warn"}>{morningWeek ? "Shift pagi · diisi 07:00" : "Shift malam · diisi 21:00"}</Badge>
+            </p>
+            <ul className="list-disc space-y-1.5 pl-5 text-muted">
+              <li>Berlaku di hari kerja yang bukan hari libur. Minggu pagi diisi <b className="text-ink">07:00 WIB</b>, minggu malam <b className="text-ink">21:00 WIB</b> (tanggal absensi = tanggal shift dimulai).</li>
+              <li>Seluruh tim bergantian shift tiap minggu. Acuannya diatur di “Acuan minggu shift pagi” pada Parameter grup.</li>
+              <li>Hanya member aktif yang belum punya absensi hari itu yang diisi. Cuti yang sudah disetujui dan absensi manual tidak tertimpa.</li>
+              <li>Baris otomatis diberi catatan <b className="text-ink">Otomatis 07:00</b> atau <b className="text-ink">Otomatis 21:00</b>. Kalau ada yang training, sakit, cuti, atau izin, timpa statusnya di menu Absensi.</li>
+            </ul>
           </div>
         </Card>
 

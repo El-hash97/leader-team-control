@@ -27,6 +27,8 @@ export type Settings = {
   contractMonths: ContractMonths;
   /** first day attendance is recorded; earlier workdays are never "missed" nor counted in performance */
   attendanceStartDate: ISODate;
+  /** any date in a morning-shift week; the team alternates morning/night weekly from here (auto "Hadir" at 07:00 / 21:00) */
+  shiftAnchorDate: ISODate;
 };
 
 export type State = {

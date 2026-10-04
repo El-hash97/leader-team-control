@@ -57,6 +57,7 @@ export function toState(t: Tables): State {
       qccBaselineDate: s.qcc_baseline_date ?? null,
       contractMonths: { vokasi: s.contract_vokasi ?? 6, pkwt1: s.contract_pkwt1 ?? 24, pkwt2Extra: s.contract_pkwt2_extra ?? 12 },
       attendanceStartDate: s.attendance_start_date ?? "2026-10-01",
+      shiftAnchorDate: s.shift_anchor_date ?? "2026-10-05",
     },
   };
 }
@@ -85,5 +86,5 @@ export const settingsRow = (s: Settings): Row => ({
   reminder_days: s.reminderDays, multi_skill_min_processes: s.multiSkillMinProcesses, multi_skill_min_level: s.multiSkillMinLevel,
   default_min_backup: s.defaultMinBackup, work_weekdays: s.workWeekdays, qcc_target_pct: s.qccTargetPct, qcc_baseline_date: s.qccBaselineDate,
   contract_vokasi: s.contractMonths.vokasi, contract_pkwt1: s.contractMonths.pkwt1, contract_pkwt2_extra: s.contractMonths.pkwt2Extra,
-  attendance_start_date: s.attendanceStartDate,
+  attendance_start_date: s.attendanceStartDate, shift_anchor_date: s.shiftAnchorDate,
 });
