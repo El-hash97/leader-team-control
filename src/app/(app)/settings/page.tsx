@@ -180,6 +180,24 @@ export default function SettingsPage() {
         </Card>
 
         <Card>
+          <CardHeader icon={CalendarX} accent="red" title="Hari libur" desc="Tidak dihitung sebagai hari kerja di laporan." />
+          <form className="flex gap-2 p-3 sm:px-4" onSubmit={(e) => { e.preventDefault(); if (holiday) { addHoliday(holiday); setHoliday(""); } }}>
+            <input type="date" value={holiday} onChange={(e) => setHoliday(e.target.value)} aria-label="Tanggal libur" className={inputCls} />
+            <Button type="submit" disabled={!holiday}><Plus size={16} />Tambah</Button>
+          </form>
+          {s.holidays.length === 0 ? <p className="px-4 pb-4 text-sm text-muted">Belum ada hari libur. Tambahkan libur nasional dan libur perusahaan tahun ini.</p> : (
+            <ul className="flex flex-wrap gap-2 px-4 pb-4">
+              {s.holidays.map((h) => (
+                <li key={h} className="inline-flex items-center gap-1 rounded-md border border-line py-1 pl-3 pr-1 text-sm">
+                  <span className="tabular">{fmtDate(h)}</span>
+                  <button onClick={() => removeHoliday(h)} aria-label={`Hapus ${fmtDate(h)}`} className="grid size-8 place-items-center text-muted hover:text-brand-strong"><X size={15} /></button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+
+        <Card>
           <CardHeader icon={Layers} accent="violet" title="Proses" desc="Ubah nama, urutan, dan cadangan minimal. Urutan di sini = urutan kolom skill map." />
           <ul className="zebra-list divide-y divide-line">
             {procs.map((pr, i) => (
@@ -290,24 +308,6 @@ export default function SettingsPage() {
             <Button type="submit" disabled={!newTraining.name.trim()}><Plus size={16} />Tambah</Button>
           </form>
           <p className="border-t border-line px-4 py-2 text-xs text-muted">Centang &quot;Masa berlaku&quot; untuk sertifikat seperti SIO, supaya tanggal kedaluwarsa wajib diisi dan muncul di pengingat. Training yang sudah dipakai member tidak bisa dihapus.</p>
-        </Card>
-
-        <Card>
-          <CardHeader icon={CalendarX} accent="red" title="Hari libur" desc="Tidak dihitung sebagai hari kerja di laporan." />
-          <form className="flex gap-2 p-3 sm:px-4" onSubmit={(e) => { e.preventDefault(); if (holiday) { addHoliday(holiday); setHoliday(""); } }}>
-            <input type="date" value={holiday} onChange={(e) => setHoliday(e.target.value)} aria-label="Tanggal libur" className={inputCls} />
-            <Button type="submit" disabled={!holiday}><Plus size={16} />Tambah</Button>
-          </form>
-          {s.holidays.length === 0 ? <p className="px-4 pb-4 text-sm text-muted">Belum ada hari libur. Tambahkan libur nasional dan libur perusahaan tahun ini.</p> : (
-            <ul className="flex flex-wrap gap-2 px-4 pb-4">
-              {s.holidays.map((h) => (
-                <li key={h} className="inline-flex items-center gap-1 rounded-md border border-line py-1 pl-3 pr-1 text-sm">
-                  <span className="tabular">{fmtDate(h)}</span>
-                  <button onClick={() => removeHoliday(h)} aria-label={`Hapus ${fmtDate(h)}`} className="grid size-8 place-items-center text-muted hover:text-brand-strong"><X size={15} /></button>
-                </li>
-              ))}
-            </ul>
-          )}
         </Card>
 
         <Card>
