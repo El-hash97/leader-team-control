@@ -68,7 +68,7 @@ export default function TrainingsPage() {
       </Card>
 
       <Card>
-        <CardHeader icon={Table2} accent="blue" title="Matriks training" desc="Klik sel untuk mencatat atau menghapus training" />
+        <CardHeader icon={Table2} accent="blue" title="Matriks training" desc="Soft skill map member" />
         <p className="px-4 pt-2 text-xs text-muted md:hidden">Geser tabel ke samping untuk melihat semua training.</p>
         <div className="overflow-x-auto">
           <table className="zebra w-full border-separate border-spacing-0 whitespace-nowrap text-xs">
