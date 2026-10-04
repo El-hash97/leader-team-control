@@ -109,13 +109,16 @@ export function AccountCard({ memberId, memberName, active }: { memberId: string
     <Card className="flex flex-col">
       <CardHeader icon={Smartphone} accent="red" title="Akun Aplikasi" desc="Login member ke portal dengan NoReg"
         action={list && <Badge tone={KIND[k].tone}>{KIND[k].label}</Badge>} />
-      <div className="flex flex-1 flex-col justify-center space-y-3 px-4 py-3 text-sm sm:px-5">
-        <dl className="grid grid-cols-2 gap-2">
-          <div><dt className="text-xs text-muted">Aktivasi</dt><dd className="tabular font-semibold">{fmtTime(a?.activatedAt ?? null)}</dd></div>
-          <div><dt className="text-xs text-muted">Login terakhir</dt><dd className="tabular font-semibold">{fmtTime(a?.lastLoginAt ?? null)}</dd></div>
+      <div className="flex flex-1 flex-col text-sm">
+        <dl className="divide-y divide-line border-b border-line">
+          <div className="flex items-center justify-between gap-3 px-4 py-2.5 sm:px-5"><dt className="text-muted">Aktivasi</dt><dd className="tabular font-semibold">{fmtTime(a?.activatedAt ?? null)}</dd></div>
+          <div className="flex items-center justify-between gap-3 px-4 py-2.5 sm:px-5"><dt className="text-muted">Login terakhir</dt><dd className="tabular font-semibold">{fmtTime(a?.lastLoginAt ?? null)}</dd></div>
+          {k === "pending" && <div className="flex items-center justify-between gap-3 px-4 py-2.5 sm:px-5"><dt className="text-muted">Kode aktif sampai</dt><dd className="tabular font-semibold">{fmtTime(a!.codeValidUntil)}</dd></div>}
+          {k === "locked" && <div className="flex items-center justify-between gap-3 px-4 py-2.5 sm:px-5"><dt className="text-muted">Terbuka lagi</dt><dd className="tabular font-semibold">{fmtTime(a!.lockedUntil)}</dd></div>}
         </dl>
-        {k === "pending" && !issued && <p className="text-xs text-muted">Kode aktif sampai {fmtTime(a!.codeValidUntil)}. Kode hanya tampil sekali saat dibuat.</p>}
-        {k === "locked" && <p className="text-xs text-muted">Terlalu banyak salah password, terbuka lagi {fmtTime(a!.lockedUntil)}. Buat kode baru untuk membuka sekarang.</p>}
+        <div className="space-y-3 px-4 pt-3 sm:px-5">
+        {k === "pending" && !issued && <p className="text-xs text-muted">Kode hanya tampil sekali saat dibuat.</p>}
+        {k === "locked" && <p className="text-xs text-muted">Terlalu banyak salah password. Buat kode baru untuk membuka sekarang.</p>}
 
         {issued && (
           <div className="rounded-md border border-brand-strong/30 bg-brand-soft p-3">
@@ -130,12 +133,15 @@ export function AccountCard({ memberId, memberName, active }: { memberId: string
           </div>
         )}
         {error && <p role="alert" className="text-sm font-medium text-brand-strong">{error}</p>}
+        </div>
 
-        <Button variant={k === "active" ? "secondary" : "primary"} disabled={!active || busy || !list} className="w-full"
-          onClick={() => (k === "active" || k === "pending" ? setConfirm(true) : issue())}>
-          <KeyRound size={16} />{k === "active" ? "Reset password (kode baru)" : k === "none" ? "Buat kode aktivasi" : "Buat kode baru"}
-        </Button>
-        {!active && <p className="text-xs text-muted">Member nonaktif tidak bisa login.</p>}
+        <div className="mt-auto space-y-2 px-4 py-3 sm:px-5">
+          <Button variant={k === "active" ? "secondary" : "primary"} disabled={!active || busy || !list} className="w-full"
+            onClick={() => (k === "active" || k === "pending" ? setConfirm(true) : issue())}>
+            <KeyRound size={16} />{k === "active" ? "Reset password (kode baru)" : k === "none" ? "Buat kode aktivasi" : "Buat kode baru"}
+          </Button>
+          {!active && <p className="text-xs text-muted">Member nonaktif tidak bisa login.</p>}
+        </div>
       </div>
 
       <Dialog open={confirm} onClose={() => setConfirm(false)} title="Buat kode baru?"
