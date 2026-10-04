@@ -106,10 +106,10 @@ export function AccountCard({ memberId, memberName, active }: { memberId: string
   }
 
   return (
-    <Card>
+    <Card className="flex flex-col">
       <CardHeader icon={Smartphone} accent="red" title="Akun Aplikasi" desc="Login member ke portal dengan NoReg"
         action={list && <Badge tone={KIND[k].tone}>{KIND[k].label}</Badge>} />
-      <div className="space-y-3 px-4 py-3 text-sm sm:px-5">
+      <div className="flex flex-1 flex-col justify-center space-y-3 px-4 py-3 text-sm sm:px-5">
         <dl className="grid grid-cols-2 gap-2">
           <div><dt className="text-xs text-muted">Aktivasi</dt><dd className="tabular font-semibold">{fmtTime(a?.activatedAt ?? null)}</dd></div>
           <div><dt className="text-xs text-muted">Login terakhir</dt><dd className="tabular font-semibold">{fmtTime(a?.lastLoginAt ?? null)}</dd></div>
