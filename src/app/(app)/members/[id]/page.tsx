@@ -2,14 +2,45 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
-import { CalendarCheck, ChevronLeft, GraduationCap, Grid3x3, History, Pencil, TrendingUp } from "lucide-react";
+import { CalendarCheck, CalendarDays, Check, ChevronLeft, GraduationCap, Grid3x3, History, Pencil, TrendingUp } from "lucide-react";
 import { useStore } from "@/lib/store";
-import { addMonths, daysLeft, displayStatus, dueLabel, monthOf, shiftMonth, tenure } from "@/lib/rules";
+import { addDays, addMonths, daysLeft, displayStatus, dueLabel, isWorkday, monthEnd, monthOf, shiftMonth, tenure, weekday } from "@/lib/rules";
+import { attKey } from "@/lib/types";
 import { fmtDate, fmtMonth } from "@/lib/format";
-import { Avatar, Badge, Button, Card, CardHeader, Dialog, EmptyState, LEVEL_TEXT, PerfValue, SkillDot } from "@/components/ui";
+import { Avatar, Badge, Button, Card, CardHeader, Dialog, EmptyState, LEVEL_TEXT, PerfValue, SkillDot, cn } from "@/components/ui";
 import { MemberDialog } from "@/components/member-dialog";
 import { AccountCard, MemberInboxCard } from "@/components/account-card";
 import { PLAN_STATUS } from "@/components/plan-meta";
+
+/** This month's attendance: Hadir = green check, anything else = its status name. */
+function AttendanceCalendar({ memberId }: { memberId: string }) {
+  const { s, today, statusById } = useStore();
+  const month = monthOf(today), first = `${month}-01`, last = monthEnd(month);
+  const cells: (string | null)[] = Array((weekday(first) + 6) % 7).fill(null); // Monday first
+  for (let d = first; d <= last; d = addDays(d, 1)) cells.push(d);
+  return (
+    <Card>
+      <CardHeader icon={CalendarDays} accent="teal" title={`Kalender absensi · ${fmtMonth(month)}`} />
+      <div className="grid grid-cols-7 gap-1 p-3 text-center">
+        {["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"].map((d) => <span key={d} className="pb-1 text-[11px] font-semibold text-muted">{d}</span>)}
+        {cells.map((d, i) => {
+          if (!d) return <span key={i} />;
+          const rec = s.attendance[attKey(d, memberId)], st = rec && statusById[rec.statusId];
+          const off = !isWorkday(d, s.settings.workWeekdays, s.holidays), hadir = st?.category === "FULFILLED";
+          return (
+            <span key={d} title={st ? st.name : off ? "Hari libur" : undefined}
+              className={cn("flex aspect-square min-w-0 flex-col items-center justify-between rounded-md px-0.5 py-1 text-[11px] leading-none",
+                hadir ? "bg-good text-white" : st ? (st.category === "ABSENT" ? "bg-brand-soft text-brand-strong" : "bg-warn-soft text-warn") : off ? "bg-soft text-muted/60" : "border border-line",
+                d === today && "ring-2 ring-ink")}>
+              <span className="tabular">{Number(d.slice(8))}</span>
+              {hadir ? <Check size={14} strokeWidth={3} aria-label="Hadir" /> : st ? <b className="w-full truncate text-[10px] font-semibold">{st.name}</b> : <span />}
+            </span>
+          );
+        })}
+      </div>
+    </Card>
+  );
+}
 
 export default function MemberDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -198,6 +229,7 @@ export default function MemberDetailPage() {
 
         <AccountCard memberId={m.id} memberName={m.name} active={m.active} />
         <MemberInboxCard memberId={m.id} />
+        <AttendanceCalendar memberId={m.id} />
       </div>
 
       <MemberDialog open={edit} member={m} onClose={() => setEdit(false)} />
