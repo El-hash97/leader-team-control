@@ -141,3 +141,18 @@ export function Sheet({ open, onClose, title, subtitle, children }: { open: bool
     </dialog>
   );
 }
+
+/** Styled replacement for window.confirm(), on the member Sheet. */
+export function ConfirmSheet({ open, onClose, onConfirm, title, message, confirmLabel, cancelLabel = "Kembali" }: {
+  open: boolean; onClose: () => void; onConfirm: () => void; title: string; message: string; confirmLabel: string; cancelLabel?: string;
+}) {
+  return (
+    <Sheet open={open} onClose={onClose} title={title}>
+      <p className="text-[14px] leading-relaxed text-m-sub">{message}</p>
+      <div className="mt-5 grid grid-cols-2 gap-2">
+        <button type="button" onClick={onClose} className="h-12 rounded-full bg-m-low text-[15px] font-semibold text-m-text active:scale-[0.98]">{cancelLabel}</button>
+        <button type="button" onClick={() => { onClose(); onConfirm(); }} className="h-12 rounded-full bg-brand-strong text-[15px] font-semibold text-white shadow-[0_4px_16px_rgba(200,0,26,0.3)] active:scale-[0.98]">{confirmLabel}</button>
+      </div>
+    </Sheet>
+  );
+}

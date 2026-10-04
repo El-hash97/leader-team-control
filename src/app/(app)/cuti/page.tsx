@@ -9,7 +9,7 @@ import { addDays, isWorkday, monthEnd, monthOf, shiftMonth, weekday } from "@/li
 import { fmtDate, fmtMonth } from "@/lib/format";
 import { announceInboxChange } from "@/components/use-inbox";
 import { LEAVE_STATUS } from "@/components/voice-meta";
-import { Avatar, Badge, Button, Card, Dialog, EmptyState, Field, PageHeader, Segmented, cn, inputCls } from "@/components/ui";
+import { Avatar, Badge, Button, Card, ConfirmDialog, Dialog, EmptyState, Field, PageHeader, Segmented, cn, inputCls } from "@/components/ui";
 
 type Tab = "PENDING" | "APPROVED" | "CLOSED" | "CALENDAR";
 const range = (l: LeaveRow) => (l.start === l.end ? fmtDate(l.start) : `${fmtDate(l.start)} – ${fmtDate(l.end)}`);
@@ -79,6 +79,7 @@ function LeaveDialog({ l, onClose, onDone }: { l: LeaveRow; onClose: () => void;
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState<"approve" | "reject" | "cancel" | null>(null);
   const [error, setError] = useState("");
+  const [ask, setAsk] = useState(false);
   const decidable = l.status === "PENDING";
 
   useEffect(() => {
@@ -87,7 +88,6 @@ function LeaveDialog({ l, onClose, onDone }: { l: LeaveRow; onClose: () => void;
 
   async function act(kind: "approve" | "reject" | "cancel") {
     if (kind === "reject" && !note.trim()) return setError("Alasan penolakan wajib diisi.");
-    if (kind === "cancel" && !confirm(`Batalkan cuti ${l.memberName} yang sudah disetujui? Absensi dari cuti ini akan dihapus.`)) return;
     setBusy(kind);
     const r = await (kind === "cancel" ? cancelApprovedLeave(l.id, note) : decideLeave(l.id, kind === "approve", note))
       .catch(() => ({ ok: false as const, error: "Server tidak bisa dihubungi." }));
@@ -99,6 +99,7 @@ function LeaveDialog({ l, onClose, onDone }: { l: LeaveRow; onClose: () => void;
   const warn = days?.filter((d) => d.others.length || d.short.length) ?? [];
 
   return (
+    <>
     <Dialog open onClose={onClose} title="Keputusan cuti" wide
       footer={decidable ? (
         <>
@@ -106,7 +107,7 @@ function LeaveDialog({ l, onClose, onDone }: { l: LeaveRow; onClose: () => void;
           <Button variant="primary" disabled={!!busy} onClick={() => act("approve")} className="bg-good hover:bg-[#12673a]">{busy === "approve" ? <LoaderCircle size={16} className="animate-spin" /> : <Check size={16} />}Setujui</Button>
         </>
       ) : l.status === "APPROVED" ? (
-        <><Button onClick={onClose}>Tutup</Button><Button variant="danger" disabled={!!busy} onClick={() => act("cancel")}>{busy ? <LoaderCircle size={16} className="animate-spin" /> : <Undo2 size={16} />}Batalkan cuti</Button></>
+        <><Button onClick={onClose}>Tutup</Button><Button variant="danger" disabled={!!busy} onClick={() => setAsk(true)}>{busy ? <LoaderCircle size={16} className="animate-spin" /> : <Undo2 size={16} />}Batalkan cuti</Button></>
       ) : <Button onClick={onClose}>Tutup</Button>}>
       <div className="flex items-center gap-3">
         <Avatar name={l.memberName} photoUrl={l.photoUrl} size={44} />
@@ -147,6 +148,9 @@ function LeaveDialog({ l, onClose, onDone }: { l: LeaveRow; onClose: () => void;
       )}
       {!decidable && l.status !== "APPROVED" && error && <p className="mt-2 text-sm text-brand-strong">{error}</p>}
     </Dialog>
+    <ConfirmDialog open={ask} onClose={() => setAsk(false)} onConfirm={() => act("cancel")} title="Batalkan cuti?"
+      message={`Batalkan cuti ${l.memberName} yang sudah disetujui? Absensi dari cuti ini akan dihapus.`} confirmLabel="Ya, batalkan" />
+    </>
   );
 }
 

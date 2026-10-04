@@ -5,7 +5,7 @@ import { CalendarCheck, CalendarDays, Info, LoaderCircle, Plus, Send, X } from "
 import { cancelMyLeave, requestLeave, type LeaveRow } from "@/app/inbox-actions";
 import { workdayList, type ISODate } from "@/lib/rules";
 import { fmtDate } from "@/lib/format";
-import { Sheet } from "@/components/member-ui";
+import { ConfirmSheet, Sheet } from "@/components/member-ui";
 import { mButtonDark, mCard, mInput } from "@/components/member-style";
 import { LEAVE_STATUS } from "@/components/voice-meta";
 import { cn } from "@/components/ui";
@@ -18,10 +18,10 @@ export function CutiView({ form, leaves }: { form: Form; leaves: LeaveRow[] }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [askId, setAskId] = useState<string | null>(null);
   const [error, setError] = useState("");
 
   async function cancel(id: string) {
-    if (!confirm("Batalkan pengajuan cuti ini?")) return;
     setBusyId(id);
     const r = await cancelMyLeave(id).catch(() => ({ ok: false as const, error: "Server tidak bisa dihubungi." }));
     setBusyId(null);
@@ -77,7 +77,7 @@ export function CutiView({ form, leaves }: { form: Form; leaves: LeaveRow[] }) {
               {l.status === "APPROVED" && <p className="mt-2 text-[12px] font-semibold text-[#0b6b47]">Disetujui leader, sudah tercatat di absensi.</p>}
               {l.status === "PENDING" && (
                 <div className="mt-3 flex justify-end">
-                  <button type="button" onClick={() => cancel(l.id)} disabled={busyId === l.id}
+                  <button type="button" onClick={() => setAskId(l.id)} disabled={busyId === l.id}
                     className="inline-flex h-10 items-center gap-1.5 rounded-full bg-m-red-fixed px-4 text-[12px] font-semibold text-brand-strong active:scale-95 disabled:opacity-50">
                     {busyId === l.id ? <LoaderCircle size={15} className="animate-spin" /> : <X size={15} />}Batalkan
                   </button>
@@ -87,6 +87,9 @@ export function CutiView({ form, leaves }: { form: Form; leaves: LeaveRow[] }) {
           ))}
         </ul>
       )}
+
+      <ConfirmSheet open={!!askId} onClose={() => setAskId(null)} onConfirm={() => askId && cancel(askId)}
+        title="Batalkan pengajuan?" message="Pengajuan cuti ini akan dibatalkan dan tidak bisa diproses leader lagi." confirmLabel="Ya, batalkan" />
 
       <Sheet open={open} onClose={() => setOpen(false)} title="Form pengajuan cuti" subtitle="Hari kerja dihitung otomatis">
         {open && <LeaveForm form={form} onDone={() => { setOpen(false); router.refresh(); }} />}

@@ -196,6 +196,18 @@ export function Dialog({ open, onClose, title, children, footer, wide }: { open:
   );
 }
 
+/** Styled replacement for window.confirm(), on the shared Dialog. */
+export function ConfirmDialog({ open, onClose, onConfirm, title, message, confirmLabel }: {
+  open: boolean; onClose: () => void; onConfirm: () => void; title: string; message: string; confirmLabel: string;
+}) {
+  return (
+    <Dialog open={open} onClose={onClose} title={title}
+      footer={<><Button onClick={onClose}>Kembali</Button><Button variant="danger" onClick={() => { onClose(); onConfirm(); }}>{confirmLabel}</Button></>}>
+      <p className="text-sm">{message}</p>
+    </Dialog>
+  );
+}
+
 export function EmptyState({ title, desc, action }: { title: string; desc: string; action?: ReactNode }) {
   return (
     <div className="px-5 py-10 text-center">
