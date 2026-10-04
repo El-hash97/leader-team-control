@@ -68,7 +68,7 @@ export default function SettingsPage() {
     <>
       <PageHeader title="Pengaturan" desc="Parameter grup, master data, dan pengelolaan data." icon={Settings} accent="gray" />
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader icon={SlidersHorizontal} accent="blue" title="Parameter grup" desc="Dipakai di semua perhitungan dashboard dan laporan." />
           <div className="grid gap-4 p-4 sm:grid-cols-2 sm:p-5">
@@ -131,7 +131,7 @@ export default function SettingsPage() {
           </div>
         </Card>
 
-        <Card>
+        <Card className="lg:col-span-2">
           <CardHeader icon={FileClock} accent="amber" title="Aturan masa kontrak"
             desc="Dipakai untuk mengisi akhir kontrak otomatis saat menambah atau mengedit member." />
           <div className="overflow-x-auto">
@@ -366,7 +366,7 @@ export default function SettingsPage() {
           </div>
         </Card>
 
-        <Card>
+        <Card className="lg:col-span-2">
           <CardHeader icon={Info} accent="gray" title="Informasi sistem" />
           <dl className="divide-y divide-line text-sm">
             {[["Versi", "2.0"], ["Penyimpanan", "Supabase PostgreSQL (Singapore)"], ["Reminder", `H-${s.settings.reminderDays}`], ["Skala skill", "0, 1/4, 2/4, 3/4, 4/4"]].map(([k, v]) => (
