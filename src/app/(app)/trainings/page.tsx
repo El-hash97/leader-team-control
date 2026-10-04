@@ -1,18 +1,18 @@
 "use client";
 import Link from "next/link";
 import { useState } from "react";
-import { BookOpen, CalendarClock, Check, CircleAlert, GraduationCap, Hourglass, Table2 } from "lucide-react";
+import { BookOpen, CalendarClock, CircleAlert, GraduationCap, Hourglass, Table2 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { daysLeft, dueLabel } from "@/lib/rules";
 import { fmtDate } from "@/lib/format";
-import { Badge, Button, Card, CardHeader, Dialog, EmptyState, Field, PageHeader, Stat, cn, inputCls } from "@/components/ui";
+import { Badge, Button, Card, CardHeader, Dialog, EmptyState, Field, PageHeader, SkillDot, Stat, cn, inputCls } from "@/components/ui";
 
 type Sel = { memberId: string; trainingId: string } | null;
 
 export default function TrainingsPage() {
   const { s, today, activeMembers, setMemberTraining, toast } = useStore();
   const [sel, setSel] = useState<Sel>(null);
-  const [draft, setDraft] = useState({ done: false, trainedAt: "", expiresAt: "" });
+  const [draft, setDraft] = useState({ level: 0, trainedAt: "", expiresAt: "" });
   const [err, setErr] = useState("");
 
   const find = (memberId: string, trainingId: string) => s.memberTrainings.find((t) => t.memberId === memberId && t.trainingId === trainingId);
@@ -28,14 +28,14 @@ export default function TrainingsPage() {
 
   const open = (memberId: string, trainingId: string) => {
     const t = find(memberId, trainingId);
-    setDraft({ done: !!t, trainedAt: t?.trainedAt ?? today, expiresAt: t?.expiresAt ?? "" });
+    setDraft({ level: t?.level ?? 0, trainedAt: t?.trainedAt ?? today, expiresAt: t?.expiresAt ?? "" });
     setErr("");
     setSel({ memberId, trainingId });
   };
   function save() {
     if (!sel) return;
-    if (draft.done && selTraining?.hasExpiry && !draft.expiresAt) return setErr("Masa berlaku wajib diisi untuk sertifikat ini.");
-    setMemberTraining(sel.memberId, sel.trainingId, draft.done ? { trainedAt: draft.trainedAt || null, expiresAt: draft.expiresAt || null } : null);
+    if (draft.level > 0 && selTraining?.hasExpiry && !draft.expiresAt) return setErr("Masa berlaku wajib diisi untuk sertifikat ini.");
+    setMemberTraining(sel.memberId, sel.trainingId, draft.level > 0 ? { level: draft.level, trainedAt: draft.trainedAt || null, expiresAt: draft.expiresAt || null } : null);
     toast("Data training disimpan.");
     setSel(null);
   }
@@ -88,10 +88,10 @@ export default function TrainingsPage() {
                     return (
                       <td key={t.id} className="border-b border-line p-0 text-center">
                         <button onClick={() => open(m.id, t.id)} title={mt ? `${fmtDate(mt.trainedAt)}${mt.expiresAt ? ` · s/d ${fmtDate(mt.expiresAt)}` : ""}` : "Belum"}
-                          aria-label={`${m.name}, ${t.name}: ${mt ? "sudah" : "belum"}`}
+                          aria-label={`${m.name}, ${t.name}: level ${mt?.level ?? 0} dari 4`}
                           className={cn("mx-auto grid size-10 place-items-center rounded-md hover:ring-1 hover:ring-line",
                             d !== null && d < 0 && "bg-brand-soft text-brand-strong", d !== null && d >= 0 && d <= s.settings.reminderDays && "bg-warn-soft text-warn")}>
-                          {mt ? <Check size={16} strokeWidth={2.6} /> : <span className="text-line">·</span>}
+                          {mt ? <SkillDot level={mt.level} size={22} /> : <span className="text-line">·</span>}
                         </button>
                       </td>
                     );
@@ -106,11 +106,20 @@ export default function TrainingsPage() {
       <Dialog open={!!sel} onClose={() => setSel(null)} title={`${sel ? name(sel.memberId) : ""} · ${selTraining?.name ?? ""}`}
         footer={<><Button onClick={() => setSel(null)}>Batal</Button><Button variant="primary" onClick={save}>Simpan</Button></>}>
         <div className="space-y-4">
-          <label className="flex min-h-11 items-center gap-3 text-sm font-medium">
-            <input type="checkbox" checked={draft.done} onChange={(e) => setDraft({ ...draft, done: e.target.checked })} className="size-5 accent-[var(--color-brand-strong)]" />
-            Sudah mengikuti training ini
-          </label>
-          {draft.done && (
+          <fieldset>
+            <legend className="mb-2 text-sm font-medium">Level training <span className="font-normal text-muted">(0 = belum mengikuti)</span></legend>
+            <div className="grid grid-cols-5 gap-2">
+              {[0, 1, 2, 3, 4].map((i) => (
+                <button key={i} type="button" onClick={() => setDraft((d) => ({ ...d, level: i }))} aria-pressed={draft.level === i}
+                  className={cn("flex min-h-14 flex-col items-center justify-center gap-1 rounded-md border px-1 py-2 text-sm",
+                    draft.level === i ? "border-brand-strong bg-brand-soft font-semibold" : "border-line hover:bg-soft")}>
+                  <SkillDot level={i} size={24} />
+                  <span className="tabular">{i ? `${i}/4` : "0"}</span>
+                </button>
+              ))}
+            </div>
+          </fieldset>
+          {draft.level > 0 && (
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Tanggal training"><input type="date" max={today} className={inputCls} value={draft.trainedAt} onChange={(e) => setDraft({ ...draft, trainedAt: e.target.value })} /></Field>
               {selTraining?.hasExpiry && (

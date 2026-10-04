@@ -18,7 +18,7 @@ export type Plan = {
   startDate: ISODate; dueDate: ISODate; method: PlanMethod; mentorId: string | null;
   status: PlanStatus; achievedAt: ISODate | null; note: string;
 };
-export type MemberTraining = { memberId: string; trainingId: string; trainedAt: ISODate | null; expiresAt: ISODate | null };
+export type MemberTraining = { memberId: string; trainingId: string; level: number; trainedAt: ISODate | null; expiresAt: ISODate | null };
 export type AttRecord = { statusId: string; note: string; fromLeave?: boolean }; // fromLeave: filled by an approved leave (PRD v3 F-1406)
 export type Snapshot = { id: string; month: string; kind: "BASELINE" | "MONTHLY"; multiSkillRate: number; safeProcesses: number };
 export type Settings = {

@@ -165,7 +165,10 @@ export default function MemberDetailPage() {
               const d = t.expiresAt ? daysLeft(t.expiresAt, today) : null;
               return (
                 <li key={t.trainingId} className="flex items-center justify-between gap-2 px-4 py-2.5 text-sm">
-                  <span><b className="block">{tr?.name}</b><span className="tabular text-xs text-muted">{fmtDate(t.trainedAt)}{t.expiresAt ? ` · berlaku s/d ${fmtDate(t.expiresAt)}` : ""}</span></span>
+                  <span className="flex items-center gap-3">
+                    <SkillDot level={t.level} size={22} />
+                    <span><b className="block">{tr?.name} <span className="tabular font-normal text-muted">{t.level}/4</span></b><span className="tabular text-xs text-muted">{fmtDate(t.trainedAt)}{t.expiresAt ? ` · berlaku s/d ${fmtDate(t.expiresAt)}` : ""}</span></span>
+                  </span>
                   {d !== null && d <= s.settings.reminderDays && <Badge tone={d < 0 ? "bad" : "warn"}>{dueLabel(d)}</Badge>}
                 </li>
               );

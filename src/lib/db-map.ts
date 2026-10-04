@@ -47,7 +47,7 @@ export function toState(t: Tables): State {
       startDate: r.start_date, dueDate: r.due_date, method: r.method as PlanMethod, mentorId: r.mentor_id,
       status: r.status as PlanStatus, achievedAt: r.achieved_at, note: r.note,
     })),
-    memberTrainings: t.member_trainings.map((r): MemberTraining => ({ memberId: r.member_id, trainingId: r.training_id, trainedAt: r.trained_at, expiresAt: r.expires_at })),
+    memberTrainings: t.member_trainings.map((r): MemberTraining => ({ memberId: r.member_id, trainingId: r.training_id, level: r.level, trainedAt: r.trained_at, expiresAt: r.expires_at })),
     attendance,
     holidays: t.holidays.map((r) => r.date).sort(),
     snapshots: t.snapshots.map((r): Snapshot => ({ id: r.id, month: r.month, kind: r.kind, multiSkillRate: r.multi_skill_rate, safeProcesses: r.safe_processes })),
@@ -77,7 +77,7 @@ export const planRow = (p: Plan): Row => ({
   start_date: p.startDate, due_date: p.dueDate, method: p.method, mentor_id: p.mentorId, status: p.status, achieved_at: p.achievedAt, note: p.note,
 });
 export const trainingMasterRow = (t: Training): Row => ({ id: t.id, name: t.name, has_expiry: t.hasExpiry, sort: t.order });
-export const trainingRow = (t: MemberTraining): Row => ({ member_id: t.memberId, training_id: t.trainingId, trained_at: t.trainedAt, expires_at: t.expiresAt });
+export const trainingRow = (t: MemberTraining): Row => ({ member_id: t.memberId, training_id: t.trainingId, level: t.level, trained_at: t.trainedAt, expires_at: t.expiresAt });
 // Any manual write unlinks the row from a leave request, so cancelling that leave later leaves this row alone (PRD v3 F-1406/F-1407).
 export const attRow = (date: string, memberId: string, statusId: string, note: string): Row => ({ member_id: memberId, date, status_id: statusId, note, leave_request_id: null });
 export const snapshotRow = (x: Snapshot): Row => ({ id: x.id, month: x.month, kind: x.kind, multi_skill_rate: x.multiSkillRate, safe_processes: x.safeProcesses });

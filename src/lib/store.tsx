@@ -230,7 +230,7 @@ function useStoreValue(initial: State) {
     commit({ ...st, attendance }, ids.length ? [{ table: "attendance", upsert: ids.map((id) => attRow(date, id, statusId, "")) }] : []);
   };
 
-  const setMemberTraining = (memberId: string, trainingId: string, data: { trainedAt: ISODate | null; expiresAt: ISODate | null } | null) => {
+  const setMemberTraining = (memberId: string, trainingId: string, data: { level: number; trainedAt: ISODate | null; expiresAt: ISODate | null } | null) => {
     const st = cur(), rest = st.memberTrainings.filter((t) => !(t.memberId === memberId && t.trainingId === trainingId));
     if (!data) return commit({ ...st, memberTrainings: rest }, [{ table: "member_trainings", delete: { member_id: memberId, training_id: trainingId } }]);
     const row = { memberId, trainingId, ...data };
