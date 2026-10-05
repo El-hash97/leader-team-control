@@ -67,8 +67,12 @@ html[data-m-theme="dark"] .m-root {
   --color-m-text: #ececf1;
   --color-m-sub: #a3a8b5;
   --color-m-surface: #171921;
-  --color-m-red-fixed: #3a1319;
-  --color-brand-strong: #ff6b7a;
+}
+/* colored banners/cards keep their light-mode text colors */
+html[data-m-theme="dark"] .m-root .m-keep {
+  --color-m-text: #111111;
+  --color-m-sub: #5f6570;
+  color: #111111;
 }
 
 html {

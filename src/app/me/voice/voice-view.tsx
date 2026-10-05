@@ -74,7 +74,7 @@ export function VoiceView({ voices, processes }: { voices: MemberVoice[]; proces
                 <img src={v.photo} alt="Foto lampiran voice" className="mt-3 max-h-56 w-full rounded-2xl object-cover" />
               )}
               {v.reply ? (
-                <div className="mt-4 rounded-[18px] bg-m-red-fixed/60 p-4">
+                <div className="m-keep mt-4 rounded-[18px] bg-m-red-fixed/60 p-4">
                   <p className="flex items-center gap-1.5 text-[12px] font-semibold">
                     <BadgeCheck size={16} className="text-brand" aria-hidden />Balasan leader<span className="font-normal text-m-sub">· {dt.format(new Date(v.repliedAt!))}</span>
                   </p>
@@ -167,7 +167,7 @@ function VoiceForm({ processes, onDone }: { processes: { id: string; name: strin
         )}
       </div>
 
-      <p role="alert" className="min-h-5 text-[13px] font-medium text-brand-strong">{error}</p>
+      <p role="alert" className="min-h-5 text-[13px] font-medium text-brand-strong dark:text-[#ff6b7a]">{error}</p>
       <button type="submit" disabled={busy} className={mButtonDark}>
         {busy ? <><LoaderCircle size={18} className="animate-spin" />Mengirim…</> : <><Send size={18} />Kirim voice</>}
       </button>

@@ -67,7 +67,7 @@ export default async function MemberHome() {
       </Link>
 
       <section className="mt-4 grid grid-cols-2 gap-3.5">
-        <Link href="/me/skill#rencana" className="flex min-h-[176px] flex-col justify-between rounded-[26px] bg-m-amber p-[18px] shadow-[0_8px_24px_-4px_rgba(18,19,26,0.06)] transition active:scale-[0.98]">
+        <Link href="/me/skill#rencana" className="m-keep flex min-h-[176px] flex-col justify-between rounded-[26px] bg-m-amber p-[18px] shadow-[0_8px_24px_-4px_rgba(18,19,26,0.06)] transition active:scale-[0.98]">
           <div>
             <span className="inline-flex rounded-[14px] bg-white/60 px-2.5 py-0.5 text-[10px] font-bold">Rencana peningkatan</span>
             {plan ? (
@@ -85,7 +85,7 @@ export default async function MemberHome() {
           )}
         </Link>
 
-        <Link href="/me/skill#training" className="flex min-h-[176px] flex-col justify-between rounded-[26px] bg-m-sky p-[18px] shadow-[0_8px_24px_-4px_rgba(18,19,26,0.06)] transition active:scale-[0.98]">
+        <Link href="/me/skill#training" className="m-keep flex min-h-[176px] flex-col justify-between rounded-[26px] bg-m-sky p-[18px] shadow-[0_8px_24px_-4px_rgba(18,19,26,0.06)] transition active:scale-[0.98]">
           <div>
             <span className="inline-flex rounded-[14px] bg-white/60 px-2.5 py-0.5 text-[10px] font-bold">Training</span>
             {train ? (
@@ -141,7 +141,7 @@ export default async function MemberHome() {
             </div>
           ))}
         </div>
-        {extra > 0 && <p className="mt-2 text-[12px] font-semibold text-brand-strong">Mangkir/lainnya: {extra} hari</p>}
+        {extra > 0 && <p className="mt-2 text-[12px] font-semibold text-brand-strong dark:text-[#ff6b7a]">Mangkir/lainnya: {extra} hari</p>}
         {offDays.length > 0 ? (
           <details className="mt-2">
             <summary className="flex min-h-10 items-center gap-1 text-[12px] font-semibold text-m-sub"><ChevronRight size={14} aria-hidden />Lihat tanggal tidak hadir ({offDays.length})</summary>

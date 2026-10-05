@@ -113,7 +113,7 @@ export function Dock({ voiceBadge = 0 }: { voiceBadge?: number }) {
               className={cn("relative flex h-12 flex-1 flex-col items-center justify-center rounded-full transition-colors", active ? "bg-white text-[#111]" : "text-white/65 hover:text-white")}>
               <Icon size={20} aria-hidden /><span className="mt-0.5 text-[10px] leading-tight">{label}</span>
               {badge > 0 && (
-                <span className="absolute right-2.5 top-1 grid min-w-4 place-items-center rounded-full bg-m-pink px-1 text-[9px] font-bold leading-4 text-m-text">
+                <span className="absolute right-2.5 top-1 grid min-w-4 place-items-center m-keep rounded-full bg-m-pink px-1 text-[9px] font-bold leading-4 text-m-text">
                   {badge}<span className="sr-only"> balasan baru</span>
                 </span>
               )}

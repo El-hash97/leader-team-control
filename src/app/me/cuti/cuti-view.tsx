@@ -43,7 +43,7 @@ export function CutiView({ form, leaves }: { form: Form; leaves: LeaveRow[] }) {
         {!form.types.length && <p className="mt-2 text-[12px] text-white/90">Jenis cuti belum diatur leader.</p>}
       </section>
 
-      <p className="mt-4 flex items-start gap-3 rounded-[20px] bg-m-amber-soft p-3.5 text-[12px] leading-relaxed">
+      <p className="mt-4 flex items-start gap-3 m-keep rounded-[20px] bg-m-amber-soft p-3.5 text-[12px] leading-relaxed">
         <Info size={18} className="mt-px shrink-0" aria-hidden />Cuti yang disetujui otomatis masuk ke absensi. Kamu bisa membatalkan selama statusnya masih Menunggu.
       </p>
 
@@ -51,7 +51,7 @@ export function CutiView({ form, leaves }: { form: Form; leaves: LeaveRow[] }) {
         <h2 className="text-base font-bold">Riwayat pengajuan</h2>
         {leaves.length > 0 && <span className="text-[12px] text-m-sub">{leaves.length} pengajuan</span>}
       </div>
-      {error && <p role="alert" className="mb-2 text-[13px] font-medium text-brand-strong">{error}</p>}
+      {error && <p role="alert" className="mb-2 text-[13px] font-medium text-brand-strong dark:text-[#ff6b7a]">{error}</p>}
       {leaves.length === 0 ? (
         <p className={`${mCard} px-5 py-6 text-center text-[13px] text-m-sub`}>Belum ada pengajuan cuti.</p>
       ) : (
@@ -63,13 +63,13 @@ export function CutiView({ form, leaves }: { form: Form; leaves: LeaveRow[] }) {
                 <span className="text-[11px] text-m-sub">Diajukan {fmtDate(jktDate(l.createdAt))}</span>
               </div>
               <h3 className="mt-3 text-[16px] font-bold">{l.typeName}</h3>
-              <p className="mt-1 flex items-center gap-1.5 text-[13px] font-semibold text-brand-strong"><CalendarCheck size={16} aria-hidden />{range(l)} · {l.workdays} hari kerja</p>
+              <p className="mt-1 flex items-center gap-1.5 text-[13px] font-semibold text-brand-strong dark:text-[#ff6b7a]"><CalendarCheck size={16} aria-hidden />{range(l)} · {l.workdays} hari kerja</p>
               <div className="mt-3 rounded-[18px] bg-m-low p-3.5">
                 <p className="text-[11px] text-m-sub">Alasan</p>
                 <p className="text-[14px]">{l.reason}</p>
               </div>
               {l.decisionNote && (
-                <div className={cn("mt-2 rounded-[18px] p-3.5", l.status === "APPROVED" ? "bg-[#dcf5ea]" : "bg-m-red-fixed")}>
+                <div className={cn("m-keep mt-2 rounded-[18px] p-3.5", l.status === "APPROVED" ? "bg-[#dcf5ea]" : "bg-m-red-fixed")}>
                   <p className="text-[11px] text-m-sub">Catatan leader{l.decidedAt ? ` · ${fmtDate(jktDate(l.decidedAt))}` : ""}</p>
                   <p className="text-[14px] font-medium">{l.decisionNote}</p>
                 </div>
@@ -147,7 +147,7 @@ function LeaveForm({ form, onDone }: { form: Form; onDone: () => void }) {
         <textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={3} maxLength={500} required
           placeholder="Tulis alasan singkat dan jelas" className="w-full resize-none rounded-[18px] bg-m-low p-4 text-[15px] placeholder:text-m-sub/70 focus:outline-none focus:ring-2 focus:ring-brand/40" />
       </label>
-      <p role="alert" className="min-h-5 text-[13px] font-medium text-brand-strong">{error}</p>
+      <p role="alert" className="min-h-5 text-[13px] font-medium text-brand-strong dark:text-[#ff6b7a]">{error}</p>
       <button type="submit" disabled={busy} className={mButtonDark}>
         {busy ? <><LoaderCircle size={18} className="animate-spin" />Mengirim…</> : <><Send size={18} />Kirim pengajuan</>}
       </button>

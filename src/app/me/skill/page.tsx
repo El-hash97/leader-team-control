@@ -30,7 +30,7 @@ export default async function MemberSkill() {
         <p className="text-[13px] text-white/85">{p.processes.length} proses di Finishing Line</p>
         <div className="relative mt-5 grid grid-cols-4 gap-2 text-center text-m-text">
           {tiles.map(([l, n]) => (
-            <div key={l} className="flex flex-col items-center rounded-[18px] bg-white/95 px-2 py-3">
+            <div key={l} className="flex flex-col items-center rounded-[18px] bg-m-surface/95 px-2 py-3">
               <SkillDot level={l} size={20} />
               <b className="mt-1 text-xl leading-none">{n}</b>
               <span className="mt-1 text-[11px] leading-tight text-m-sub">{l}/4</span>

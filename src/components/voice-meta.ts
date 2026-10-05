@@ -3,11 +3,11 @@ import type { VoiceStatus } from "@/lib/rules";
 
 export type VoiceCategory = "SARAN" | "KELUHAN" | "PERTANYAAN" | "K3" | "BELAJAR" | "LAINNYA";
 export const VOICE_CATEGORY: Record<VoiceCategory, { label: string; chip: string }> = {
-  SARAN: { label: "Saran perbaikan", chip: "bg-m-amber text-m-text" },
+  SARAN: { label: "Saran perbaikan", chip: "bg-m-amber text-[#111]" },
   KELUHAN: { label: "Keluhan", chip: "bg-m-low text-m-text" },
   PERTANYAAN: { label: "Pertanyaan", chip: "bg-m-sky-soft text-[#1d4a8c]" },
-  K3: { label: "K3 / Safety", chip: "bg-m-pink text-m-text" },
-  BELAJAR: { label: "Ingin belajar proses", chip: "bg-m-sky text-m-text" },
+  K3: { label: "K3 / Safety", chip: "bg-m-pink text-[#111]" },
+  BELAJAR: { label: "Ingin belajar proses", chip: "bg-m-sky text-[#111]" },
   LAINNYA: { label: "Lainnya", chip: "bg-m-low text-m-sub" },
 };
 export const VOICE_CATEGORIES = Object.keys(VOICE_CATEGORY) as VoiceCategory[];

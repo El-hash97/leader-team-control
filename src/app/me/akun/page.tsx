@@ -35,7 +35,7 @@ export default async function MemberAccount() {
         <p className="relative text-[13px] text-white/85">{me.position} · Finishing Line</p>
         <dl className="relative mt-5 grid grid-cols-2 gap-2">
           {rows.map(([k, v]) => (
-            <div key={k} className="rounded-[18px] bg-white/95 p-3.5 text-m-text">
+            <div key={k} className="rounded-[18px] bg-m-surface/95 p-3.5 text-m-text">
               <dt className="text-[11px] font-medium text-m-sub">{k}</dt>
               <dd className="mt-0.5 text-[15px] font-bold">{v}</dd>
             </div>

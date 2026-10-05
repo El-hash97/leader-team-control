@@ -45,7 +45,7 @@ export function PasswordForm() {
       <PasswordInput name="current" label="Password saat ini" autoComplete="current-password" />
       <PasswordInput name="next" label="Password baru" hint="Min. 6 karakter" autoComplete="new-password" />
       <PasswordInput name="repeat" label="Ulangi password baru" autoComplete="new-password" />
-      <p role="status" className={`min-h-5 text-[13px] font-medium ${msg?.ok ? "text-m-ok" : "text-brand-strong"}`}>
+      <p role="status" className={`min-h-5 text-[13px] font-medium ${msg?.ok ? "text-m-ok" : "text-brand-strong dark:text-[#ff6b7a]"}`}>
         {msg?.ok && <CircleCheck size={15} className="mr-1 inline align-[-2px]" />}{msg?.text}
       </p>
       <button type="submit" disabled={busy} className={mButtonDark}>
