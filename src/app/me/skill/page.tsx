@@ -97,7 +97,7 @@ export default async function MemberSkill() {
           <span aria-hidden className="absolute bottom-6 left-[25px] top-6 w-0.5 rounded-full bg-m-low" />
           {p.logs.map((l, i) => (
             <li key={l.id} className="relative flex gap-3 pb-4 last:pb-0">
-              <span className={`relative mt-1 size-3 shrink-0 rounded-full ring-4 ${i === 0 ? "bg-brand ring-m-red-fixed" : "bg-[#c9ccd1] ring-white"}`} />
+              <span className={`relative mt-1 size-3 shrink-0 rounded-full ring-4 ${i === 0 ? "bg-brand ring-m-red-fixed" : "bg-[#c9ccd1] ring-m-surface"}`} />
               <div className="min-w-0">
                 <p className="flex items-center gap-1.5 text-[12px] text-m-sub">{fmtDate(l.date)}{l.isNew && <NewChip />}</p>
                 <p className="text-[14px] font-bold leading-snug">{l.processName}</p>

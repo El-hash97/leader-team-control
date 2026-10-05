@@ -43,7 +43,7 @@ export default async function MemberHome() {
       <MemberHeader title="Beranda" />
 
       <section className="flex items-center gap-4">
-        <span className="shrink-0 rounded-full shadow-sm ring-4 ring-white"><Avatar name={me.name} photoUrl={me.photoUrl} size={64} /></span>
+        <span className="shrink-0 rounded-full shadow-sm ring-4 ring-m-surface"><Avatar name={me.name} photoUrl={me.photoUrl} size={64} /></span>
         <div className="min-w-0">
           <p className="text-[12px] font-medium text-m-sub">Selamat datang,</p>
           <h2 className="line-clamp-2 text-xl font-bold leading-tight tracking-tight">{me.name}</h2>

@@ -28,7 +28,7 @@ export default async function MemberAccount() {
       <section className="relative overflow-hidden rounded-[26px] bg-brand p-6 text-white shadow-[0_12px_28px_-8px_rgba(200,0,26,0.45)]">
         <div aria-hidden className="pointer-events-none absolute -bottom-8 -right-6 size-32 rounded-full bg-white/15 blur-sm" />
         <div className="relative flex items-center gap-4">
-          <span className="shrink-0 rounded-full ring-4 ring-white"><Avatar name={me.name} photoUrl={me.photoUrl} size={64} /></span>
+          <span className="shrink-0 rounded-full ring-4 ring-m-surface"><Avatar name={me.name} photoUrl={me.photoUrl} size={64} /></span>
           <span className="rounded-full bg-white/20 px-2.5 py-0.5 text-[11px] font-bold tabular-nums">NoReg {me.noreg}</span>
         </div>
         <h2 className="relative mt-3 text-xl font-bold leading-tight tracking-tight">{me.name}</h2>

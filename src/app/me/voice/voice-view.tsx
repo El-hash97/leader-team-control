@@ -45,7 +45,7 @@ export function VoiceView({ voices, processes }: { voices: MemberVoice[]; proces
         <div className="-mx-5 mt-4 flex gap-2 overflow-x-auto px-5 py-1" role="group" aria-label="Saring kategori">
           {(["ALL", ...VOICE_CATEGORIES.filter((c) => counts[c])] as const).map((c) => (
             <button key={c} type="button" onClick={() => setFilter(c)} aria-pressed={filter === c}
-              className={cn("h-9 shrink-0 rounded-full px-4 text-[12px] font-semibold shadow-sm", filter === c ? "bg-m-dock text-white" : "bg-white text-m-sub")}>
+              className={cn("h-9 shrink-0 rounded-full px-4 text-[12px] font-semibold shadow-sm", filter === c ? "bg-m-dock text-white" : "bg-m-surface text-m-sub")}>
               {c === "ALL" ? `Semua (${voices.length})` : `${VOICE_CATEGORY[c].label} (${counts[c]})`}
             </button>
           ))}
@@ -161,7 +161,7 @@ function VoiceForm({ processes, onDone }: { processes: { id: string; name: strin
         ) : (
           <label className="flex min-h-12 cursor-pointer items-center justify-between rounded-2xl bg-m-low px-4 text-[13px] font-semibold">
             <span className="flex items-center gap-2"><Camera size={18} className="text-m-sub" aria-hidden />Lampirkan foto (opsional)</span>
-            <span className="rounded-full bg-white px-3 py-1 text-[12px] shadow-sm">Pilih</span>
+            <span className="rounded-full bg-m-surface px-3 py-1 text-[12px] shadow-sm">Pilih</span>
             <input type="file" accept="image/*" className="sr-only" onChange={(e) => pick(e.target.files?.[0])} />
           </label>
         )}

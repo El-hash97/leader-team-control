@@ -5,7 +5,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Bell, CalendarDays, CircleUser, GraduationCap, House, MessageCircle, X, type LucideIcon } from "lucide-react";
+import { Bell, Moon, Sun, CalendarDays, CircleUser, GraduationCap, House, MessageCircle, X, type LucideIcon } from "lucide-react";
 import { cn } from "@/components/ui";
 import { LtcMark } from "@/components/ltc-mark";
 import { beginVisit } from "@/app/actions";
@@ -30,6 +30,15 @@ export function MemberTopBar({ notices }: { notices: MemberNotice[] }) {
     return () => { document.removeEventListener("mousedown", outside); document.removeEventListener("keydown", esc); };
   }, [open]);
 
+  const [dark, setDark] = useState(false);
+  useEffect(() => setDark(document.documentElement.dataset.mTheme === "dark"), []);
+  const toggleTheme = () => {
+    const next = !dark;
+    setDark(next);
+    document.documentElement.dataset.mTheme = next ? "dark" : "light";
+    try { localStorage.setItem("m-theme", next ? "dark" : "light"); } catch {}
+  };
+
   const icon = "relative grid size-11 place-items-center rounded-full text-white/85 transition-colors hover:bg-white/10 hover:text-white";
   return (
     <header className="sticky top-0 z-40 bg-m-dock pt-[env(safe-area-inset-top)] text-white shadow-[0_2px_12px_rgba(0,0,0,0.25)]">
@@ -42,6 +51,9 @@ export function MemberTopBar({ notices }: { notices: MemberNotice[] }) {
           </span>
         </Link>
         <div className="flex shrink-0 items-center gap-1" ref={box}>
+          <button type="button" onClick={toggleTheme} aria-label={dark ? "Mode terang" : "Mode gelap"} className={icon}>
+            {dark ? <Sun size={22} aria-hidden /> : <Moon size={22} aria-hidden />}
+          </button>
           <div className="relative">
             <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-haspopup="true"
               aria-label={notices.length ? `Notifikasi, ${notices.length} baru` : "Notifikasi"} className={icon}>
@@ -49,7 +61,7 @@ export function MemberTopBar({ notices }: { notices: MemberNotice[] }) {
               {notices.length > 0 && <span aria-hidden className="absolute right-2.5 top-2.5 size-2.5 rounded-full bg-brand ring-2 ring-m-dock" />}
             </button>
             {open && (
-              <div className="absolute right-0 top-12 w-72 overflow-hidden rounded-[22px] bg-white text-m-text shadow-[0_16px_40px_rgba(18,19,26,0.28)]">
+              <div className="absolute right-0 top-12 w-72 overflow-hidden rounded-[22px] bg-m-surface text-m-text shadow-[0_16px_40px_rgba(18,19,26,0.28)]">
                 <p className="border-b border-m-low px-4 py-3 text-[13px] font-bold">Notifikasi</p>
                 {notices.length ? (
                   <ul className="divide-y divide-m-low">
@@ -98,7 +110,7 @@ export function Dock({ voiceBadge = 0 }: { voiceBadge?: number }) {
           const badge = href === "/me/voice" && voiceBadge > 0 && !active ? voiceBadge : 0;
           return (
             <Link key={label} href={href} aria-current={active ? "page" : undefined}
-              className={cn("relative flex h-12 flex-1 flex-col items-center justify-center rounded-full transition-colors", active ? "bg-white text-m-text" : "text-white/65 hover:text-white")}>
+              className={cn("relative flex h-12 flex-1 flex-col items-center justify-center rounded-full transition-colors", active ? "bg-white text-[#111]" : "text-white/65 hover:text-white")}>
               <Icon size={20} aria-hidden /><span className="mt-0.5 text-[10px] leading-tight">{label}</span>
               {badge > 0 && (
                 <span className="absolute right-2.5 top-1 grid min-w-4 place-items-center rounded-full bg-m-pink px-1 text-[9px] font-bold leading-4 text-m-text">
@@ -126,7 +138,7 @@ export function Sheet({ open, onClose, title, subtitle, children }: { open: bool
     <dialog ref={ref} onClose={onClose} onClick={(e) => e.target === ref.current && onClose()}
       className="m-0 mt-auto w-full max-w-none bg-transparent p-0 backdrop:bg-m-dock/55 sm:m-auto sm:max-w-md">
       {open && (
-        <div className="mx-auto max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-t-[32px] bg-white px-5 pb-[max(env(safe-area-inset-bottom),20px)] pt-3 font-jakarta text-m-text sm:rounded-[32px]">
+        <div className="mx-auto max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-t-[32px] bg-m-surface px-5 pb-[max(env(safe-area-inset-bottom),20px)] pt-3 font-jakarta text-m-text sm:rounded-[32px]">
           <div aria-hidden className="mx-auto h-1.5 w-12 rounded-full bg-m-low" />
           <div className="mt-3 flex items-start justify-between gap-3">
             <div>
@@ -151,7 +163,7 @@ export function ConfirmSheet({ open, onClose, onConfirm, title, message, confirm
       <p className="text-[14px] leading-relaxed text-m-sub">{message}</p>
       <div className="mt-5 grid grid-cols-2 gap-2">
         <button type="button" onClick={onClose} className="h-12 rounded-full bg-m-low text-[15px] font-semibold text-m-text active:scale-[0.98]">{cancelLabel}</button>
-        <button type="button" onClick={() => { onClose(); onConfirm(); }} className="h-12 rounded-full bg-brand-strong text-[15px] font-semibold text-white shadow-[0_4px_16px_rgba(200,0,26,0.3)] active:scale-[0.98]">{confirmLabel}</button>
+        <button type="button" onClick={() => { onClose(); onConfirm(); }} className="h-12 rounded-full bg-brand-strong text-[15px] font-semibold text-white dark:bg-brand shadow-[0_4px_16px_rgba(200,0,26,0.3)] active:scale-[0.98]">{confirmLabel}</button>
       </div>
     </Sheet>
   );

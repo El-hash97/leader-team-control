@@ -34,7 +34,8 @@ export default async function MemberLayout({ children }: LayoutProps<"/me">) {
   ].filter((n): n is MemberNotice => !!n);
 
   return (
-    <div className={`${jakarta.variable} min-h-dvh bg-m-canvas font-jakarta text-m-text`}>
+    <div className={`${jakarta.variable} m-root min-h-dvh bg-m-canvas font-jakarta text-m-text`}>
+      <script dangerouslySetInnerHTML={{ __html: `try{document.documentElement.dataset.mTheme=localStorage.getItem("m-theme")==="dark"?"dark":"light"}catch{}` }} />
       <MemberTopBar notices={notices} />
       <main className="mx-auto w-full max-w-md px-5 pb-32 pt-5">{children}</main>
       <Dock voiceBadge={voiceNew} />

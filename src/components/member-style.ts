@@ -3,7 +3,7 @@ import { Plus_Jakarta_Sans } from "next/font/google";
 
 export const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-plus-jakarta", display: "swap" });
 
-export const mCard = "rounded-[26px] bg-white shadow-[0_8px_24px_-4px_rgba(18,19,26,0.05)]";
+export const mCard = "rounded-[26px] bg-m-surface shadow-[0_8px_24px_-4px_rgba(18,19,26,0.05)]";
 export const mInput =
   "h-12 w-full rounded-2xl bg-m-low px-4 text-[15px] text-m-text placeholder:text-m-sub/70 focus:outline-none focus:ring-2 focus:ring-brand/40 disabled:opacity-60";
 export const mButtonDark =
