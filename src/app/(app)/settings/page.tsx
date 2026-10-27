@@ -369,7 +369,7 @@ export default function SettingsPage() {
         <Card>
           <CardHeader icon={Info} accent="gray" title="Informasi sistem" />
           <dl className="divide-y divide-line text-sm">
-            {[["Versi", "2.0"], ["Penyimpanan", "Supabase PostgreSQL (Singapore)"], ["Reminder", `H-${s.settings.reminderDays}`], ["Skala skill", "0, 1/4, 2/4, 3/4, 4/4"]].map(([k, v]) => (
+            {[["Versi", "2.0"], ["Penyimpanan", "Neon PostgreSQL (Singapore)"], ["Reminder", `H-${s.settings.reminderDays}`], ["Skala skill", "0, 1/4, 2/4, 3/4, 4/4"]].map(([k, v]) => (
               <div key={k} className="flex justify-between gap-4 px-4 py-2.5 sm:px-5"><dt className="text-muted">{k}</dt><dd className="text-right font-medium">{v}</dd></div>
             ))}
           </dl>

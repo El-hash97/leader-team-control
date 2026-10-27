@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { LoaderCircle, RotateCcw } from "lucide-react";
 
-// Shown when a server render fails (Supabase unreachable after its own retries, missing env, …).
+// Shown when a server render fails (database unreachable, missing env, …).
 // retry() re-fetches the server components; reset() alone would only re-render the stale error.
 export default function AppError({ error, retry }: { error: Error & { digest?: string }; retry: () => void }) {
   const [busy, setBusy] = useState(false);

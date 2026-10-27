@@ -1,4 +1,4 @@
-// Mapping between Supabase rows (snake_case) and app types (camelCase).
+// Mapping between database rows (snake_case) and app types (camelCase).
 // Shared by the server loader and the client-side save builders.
 import type { AttCategory, PlanStatus } from "./rules";
 import {

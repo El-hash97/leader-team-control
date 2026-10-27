@@ -2,7 +2,7 @@
 
 Web app for team leaders to monitor member skills per process (Toyota 1/4–4/4 skill map), plan skill upgrades for QCC activities, and control daily attendance.
 
-Data lives in Supabase (Postgres). All reads and writes go through Next.js server code with the Supabase secret key; RLS is enabled with no policies, so the database is closed to public clients. Login is a single leader account checked on the server (httpOnly signed session cookie).
+Data lives in Neon (Postgres, Singapore). All reads and writes go through Next.js server code (`src/lib/server/db.ts`); the connection string never reaches the browser. The full schema is in `db/schema.sql`. Daily auto-attendance runs as a Vercel Cron job calling the `auto_fill_hadir` database function. Login is a single leader account checked on the server (httpOnly signed session cookie).
 
 ## Features
 
@@ -21,7 +21,7 @@ Next.js (App Router) · TypeScript · Tailwind CSS · lucide-react
 
 ## Run
 
-Copy `.env.example` to `.env.local` and fill in the Supabase URL, the Supabase secret key (`sb_secret_...`), the leader username/password, and a random `SESSION_SECRET` (32+ characters). Then:
+Copy `.env.example` to `.env.local` and fill in the Neon `DATABASE_URL`, a random `CRON_SECRET`, the leader username/password, and a random `SESSION_SECRET` (32+ characters). Then:
 
 ```bash
 pnpm install

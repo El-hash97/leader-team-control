@@ -1,5 +1,5 @@
 "use client";
-// App state loaded from Supabase by the (app) layout. Actions update the screen first,
+// App state loaded from the database by the (app) layout. Actions update the screen first,
 // then persist through the `save` server action; a failed write reloads from the database.
 import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from "react";
 import { attKey, type State, type Member, type Plan, type Settings, type Process, type SkillLog, type Training } from "./types";
@@ -36,7 +36,7 @@ function useStoreValue(initial: State) {
     setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 3500);
   }, []);
 
-  /** Apply `next` on screen now, write `ops` to Supabase in the background. */
+  /** Apply `next` on screen now, write `ops` to the database in the background. */
   const commit = (next: State, ops: Op[]) => {
     latest.current = next;
     setS(next);
