@@ -1,6 +1,6 @@
 "use server";
 import { redirect } from "next/navigation";
-import { db, loadTables } from "@/lib/server/db";
+import { applyOps, loadTables, one, q } from "@/lib/server/db";
 import {
   checkCredentials, codeMatches, endSession, hashCode, hashPassword, isAuthed, newActivationCode,
   readSeenBase, setSeenBase, startMemberSession, startSession, verifyPassword,
@@ -38,15 +38,12 @@ export async function loadState(): Promise<State> {
 /** Applies writes in order. Tables are whitelisted; Postgres constraints validate the rows. */
 export async function save(ops: Op[]): Promise<Result> {
   if (!(await isAuthed())) return { ok: false, error: "Sesi habis. Silakan masuk lagi." };
-  const client = db();
-  for (const op of ops) {
-    if (!TABLES.includes(op.table)) return { ok: false, error: `Tabel tidak dikenal: ${op.table}` };
-    const q = client.from(op.table);
-    const { error } =
-      "upsert" in op ? await q.upsert(op.upsert)
-      : "update" in op ? await q.update(op.update).match(op.match)
-      : await q.delete().match(op.delete);
-    if (error) return { ok: false, error: error.message };
+  const bad = ops.find((op) => !TABLES.includes(op.table));
+  if (bad) return { ok: false, error: `Tabel tidak dikenal: ${bad.table}` };
+  try {
+    await applyOps(ops);
+  } catch (e) {
+    return { ok: false, error: (e as Error).message };
   }
   return { ok: true };
 }
@@ -60,9 +57,9 @@ type Account = {
 
 /** Active member + account row for a NoReg. Inactive or unknown NoReg returns null (F-1108). */
 async function accountByNoreg(noreg: string): Promise<{ memberId: string; acc: Account | null } | null> {
-  const { data: m } = await db().from("members").select("id, active").eq("noreg", noreg).maybeSingle();
+  const m = await one<{ id: string; active: boolean }>("select id, active from members where noreg = $1", [noreg]);
   if (!m?.active) return null;
-  const { data: acc } = await db().from("member_accounts").select("*").eq("member_id", m.id).maybeSingle();
+  const acc = await one<Account>("select * from member_accounts where member_id = $1", [m.id]);
   return { memberId: m.id, acc };
 }
 
@@ -73,9 +70,8 @@ function lockedMessage(acc: Account | null): string | null {
 
 async function recordFail(acc: Account) {
   const n = nextFailState(acc.failed_attempts, Date.now());
-  await db().from("member_accounts")
-    .update({ failed_attempts: n.failed, locked_until: n.lockedUntil ? new Date(n.lockedUntil).toISOString() : null })
-    .eq("member_id", acc.member_id);
+  await q("update member_accounts set failed_attempts = $1, locked_until = $2 where member_id = $3",
+    [n.failed, n.lockedUntil ? new Date(n.lockedUntil).toISOString() : null, acc.member_id]);
 }
 
 async function memberLogin(noreg: string, password: string): Promise<Result> {
@@ -88,9 +84,7 @@ async function memberLogin(noreg: string, password: string): Promise<Result> {
     await recordFail(acc);
     return { ok: false, error: BAD_LOGIN };
   }
-  await db().from("member_accounts")
-    .update({ failed_attempts: 0, locked_until: null, last_login_at: new Date().toISOString() })
-    .eq("member_id", found.memberId);
+  await q("update member_accounts set failed_attempts = 0, locked_until = null, last_login_at = now() where member_id = $1", [found.memberId]);
   await startMemberSession(found.memberId, acc.session_version);
   return { ok: true };
 }
@@ -115,12 +109,13 @@ export async function activate(noreg: string, code: string, password: string): P
   }
   const now = new Date().toISOString();
   const version = acc.session_version + 1;
-  const { error } = await db().from("member_accounts").update({
-    password_hash: await hashPassword(password), activation_hash: null, activation_expires: null,
-    session_version: version, failed_attempts: 0, locked_until: null,
-    activated_at: acc.activated_at ?? now, last_login_at: now,
-  }).eq("member_id", found.memberId);
-  if (error) return { ok: false, error: "Gagal menyimpan. Coba lagi." };
+  try {
+    await q(`update member_accounts set password_hash = $1, activation_hash = null, activation_expires = null,
+      session_version = $2, failed_attempts = 0, locked_until = null, activated_at = $3, last_login_at = $4 where member_id = $5`,
+      [await hashPassword(password), version, acc.activated_at ?? now, now, found.memberId]);
+  } catch {
+    return { ok: false, error: "Gagal menyimpan. Coba lagi." };
+  }
   await startMemberSession(found.memberId, version);
   return { ok: true };
 }
@@ -131,7 +126,7 @@ export async function changePassword(current: string, next: string): Promise<Res
   if (!me) return { ok: false, error: "Sesi habis. Silakan masuk lagi." };
   const bad = passwordError(next);
   if (bad) return { ok: false, error: bad };
-  const { data: acc } = await db().from("member_accounts").select("*").eq("member_id", me.id).single<Account>();
+  const acc = await one<Account>("select * from member_accounts where member_id = $1", [me.id]);
   if (!acc) return { ok: false, error: "Akun tidak ditemukan." };
   const locked = lockedMessage(acc);
   if (locked) return { ok: false, error: locked };
@@ -140,10 +135,12 @@ export async function changePassword(current: string, next: string): Promise<Res
     return { ok: false, error: "Password saat ini salah." };
   }
   const version = acc.session_version + 1;
-  const { error } = await db().from("member_accounts")
-    .update({ password_hash: await hashPassword(next), session_version: version, failed_attempts: 0 })
-    .eq("member_id", me.id);
-  if (error) return { ok: false, error: "Gagal menyimpan. Coba lagi." };
+  try {
+    await q("update member_accounts set password_hash = $1, session_version = $2, failed_attempts = 0 where member_id = $3",
+      [await hashPassword(next), version, me.id]);
+  } catch {
+    return { ok: false, error: "Gagal menyimpan. Coba lagi." };
+  }
   await startMemberSession(me.id, version);
   return { ok: true };
 }
@@ -152,10 +149,10 @@ export async function changePassword(current: string, next: string): Promise<Res
 export async function beginVisit(): Promise<void> {
   const me = await requireMember();
   if (!me || (await readSeenBase())) return;
-  const { data } = await db().from("member_accounts").select("last_seen_at").eq("member_id", me.id).maybeSingle();
+  const data = await one<{ last_seen_at: string | null }>("select last_seen_at from member_accounts where member_id = $1", [me.id]);
   const now = new Date().toISOString();
   await setSeenBase(data?.last_seen_at ?? now); // first visit ever: nothing counts as new
-  await db().from("member_accounts").update({ last_seen_at: now }).eq("member_id", me.id);
+  await q("update member_accounts set last_seen_at = $1 where member_id = $2", [now, me.id]);
 }
 
 /* ---------- leader side ---------- */
@@ -168,10 +165,10 @@ export type AccountSummary = {
 /** Status only, never hashes. */
 export async function listAccounts(): Promise<AccountSummary[]> {
   if (!(await isAuthed())) return [];
-  const { data } = await db().from("member_accounts")
-    .select("member_id, password_hash, activation_hash, activation_expires, locked_until, activated_at, last_login_at");
+  const data = await q<Account & { last_login_at: string | null }>(
+    "select member_id, password_hash, activation_hash, activation_expires, locked_until, activated_at, last_login_at from member_accounts");
   const now = Date.now();
-  return (data ?? []).map((a) => ({
+  return data.map((a) => ({
     memberId: a.member_id,
     activated: !!a.password_hash,
     codeValidUntil: a.activation_hash && a.activation_expires && new Date(a.activation_expires).getTime() > now ? a.activation_expires : null,
@@ -185,16 +182,18 @@ export async function listAccounts(): Promise<AccountSummary[]> {
  *  session stop working until the member activates again (covers a lost phone, not just a forgotten password). */
 export async function createActivationCode(memberId: string): Promise<{ ok: true; code: string; validUntil: string } | { ok: false; error: string }> {
   if (!(await isAuthed())) return { ok: false, error: "Sesi habis. Silakan masuk lagi." };
-  const client = db();
-  const { data: m } = await client.from("members").select("active").eq("id", memberId).maybeSingle();
+  const m = await one<{ active: boolean }>("select active from members where id = $1", [memberId]);
   if (!m?.active) return { ok: false, error: "Member tidak aktif." };
-  const { data: acc } = await client.from("member_accounts").select("session_version").eq("member_id", memberId).maybeSingle();
   const code = newActivationCode();
   const validUntil = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
-  const { error } = await client.from("member_accounts").upsert({
-    member_id: memberId, password_hash: null, activation_hash: hashCode(code), activation_expires: validUntil,
-    session_version: (acc?.session_version ?? 0) + 1, failed_attempts: 0, locked_until: null,
-  });
-  if (error) return { ok: false, error: error.message };
+  try {
+    await q(`insert into member_accounts (member_id, password_hash, activation_hash, activation_expires, session_version, failed_attempts, locked_until)
+      values ($1, null, $2, $3, 1, 0, null)
+      on conflict (member_id) do update set password_hash = null, activation_hash = excluded.activation_hash,
+        activation_expires = excluded.activation_expires, session_version = member_accounts.session_version + 1,
+        failed_attempts = 0, locked_until = null`, [memberId, hashCode(code), validUntil]);
+  } catch (e) {
+    return { ok: false, error: (e as Error).message };
+  }
   return { ok: true, code, validUntil };
 }

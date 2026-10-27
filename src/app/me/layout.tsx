@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { redirect } from "next/navigation";
 import { loadPortal, requireMember } from "@/lib/server/member";
-import { db } from "@/lib/server/db";
+import { one, q } from "@/lib/server/db";
 import { Dock, MemberTopBar, VisitTracker, type MemberNotice } from "@/components/member-ui";
 import { jakarta } from "@/components/member-style";
 
@@ -15,17 +15,17 @@ export default async function MemberLayout({ children }: LayoutProps<"/me">) {
   if (!me) redirect("/login");
   const portal = await loadPortal(me.id); // cached: pages reuse it
   const [replies, decided] = await Promise.all([
-    db().from("voices").select("id", { count: "exact", head: true })
-      .eq("member_id", me.id).not("replied_at", "is", null).is("member_seen_at", null),
+    one<{ n: number }>("select count(*)::int as n from voices where member_id = $1 and replied_at is not null and member_seen_at is null", [me.id]),
     portal.base
-      ? db().from("leave_requests").select("status").eq("member_id", me.id).in("status", ["APPROVED", "REJECTED"]).gt("decided_at", portal.base)
-      : Promise.resolve({ data: [] as { status: string }[] }),
+      ? q<{ status: string }>("select status from leave_requests where member_id = $1 and status in ('APPROVED', 'REJECTED') and decided_at > $2",
+        [me.id, portal.base])
+      : Promise.resolve([]),
   ]);
 
   // Bell: everything the leader did for this member that the member has not looked at yet.
-  const voiceNew = replies.count ?? 0;
-  const approved = (decided.data ?? []).filter((d) => d.status === "APPROVED").length;
-  const rejected = (decided.data ?? []).length - approved;
+  const voiceNew = replies?.n ?? 0;
+  const approved = decided.filter((d) => d.status === "APPROVED").length;
+  const rejected = decided.length - approved;
   const notices: MemberNotice[] = [
     voiceNew && { href: "/me/voice", text: `${voiceNew} balasan baru dari leader untuk voice kamu` },
     approved && { href: "/me/cuti", text: `${approved} pengajuan cuti disetujui` },

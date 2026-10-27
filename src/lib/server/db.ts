@@ -1,64 +1,75 @@
 import "server-only";
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import { TABLES, type Row, type Tables } from "../db-map";
-import { RETRY_DELAYS_MS, shouldRetry } from "../retry";
+import { neon, types, type NeonQueryFunction } from "@neondatabase/serverless";
+import { TABLES, type Op, type Row, type Tables } from "../db-map";
 
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+// Keep the shapes the app was written against: dates stay "YYYY-MM-DD", timestamps become ISO strings.
+const DATE = 1082, TIMESTAMPTZ = 1184;
+const parsers = {
+  getTypeParser: (oid: number, format?: "text" | "binary") =>
+    oid === DATE ? (v: string) => v
+    : oid === TIMESTAMPTZ ? (v: string) => (types.getTypeParser(oid, format)(v) as Date).toISOString()
+    : types.getTypeParser(oid, format),
+};
 
-/** Every Supabase call goes through here, so one transient failure no longer breaks a whole page
- *  (the "Data tidak bisa dimuat" screen). Policy lives in lib/retry.ts. */
-async function retryingFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
-  const method = (init?.method ?? (input instanceof Request ? input.method : "GET")).toUpperCase();
-  for (let attempt = 0; ; attempt++) {
-    // A skewed Supabase node keeps failing every request on the same keep-alive socket, so a retry
-    // asks for that socket to be closed: the next attempt is guaranteed a fresh connection.
-    let opts = init;
-    if (attempt > 0) {
-      const headers = new Headers(init?.headers);
-      headers.set("connection", "close");
-      opts = { ...init, headers };
-    }
-    let res: Response;
-    try {
-      res = await fetch(input, opts);
-    } catch (e) {
-      if (!shouldRetry({ method, networkError: true, attempt })) throw e;
-      console.warn(`[db] network error on ${method}, retry ${attempt + 1}:`, (e as Error).message);
-      await sleep(RETRY_DELAYS_MS[attempt]);
-      continue;
-    }
-    if (res.ok) return res;
-    const body = res.status === 401 ? await res.clone().text() : undefined;
-    if (!shouldRetry({ method, status: res.status, body, attempt })) return res;
-    console.warn(`[db] ${res.status} on ${method}, retry ${attempt + 1}${body ? `: ${body.slice(0, 120)}` : ""}`);
-    await sleep(RETRY_DELAYS_MS[attempt]);
-  }
-}
+let client: NeonQueryFunction<false, false> | null = null;
 
-let client: SupabaseClient | null = null;
-
-// Server-only client with the secret key. RLS denies anon/authenticated, so this is the only way in.
-export function db() {
+// Server-only. The connection string carries the owner password, so it never reaches the browser.
+export function sql() {
   if (client) return client;
-  const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SECRET_KEY;
-  if (!url || !key) throw new Error("SUPABASE_URL / SUPABASE_SECRET_KEY belum diisi di environment.");
-  client = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false }, global: { fetch: retryingFetch } });
+  const url = process.env.DATABASE_URL;
+  if (!url) throw new Error("DATABASE_URL belum diisi di environment.");
+  client = neon(url);
   return client;
 }
 
-// PostgREST returns at most 1000 rows per request, so page through big tables (attendance grows daily).
-async function selectAll(table: string): Promise<Row[]> {
-  const out: Row[] = [];
-  for (let from = 0; ; from += 1000) {
-    const { data, error } = await db().from(table).select("*").range(from, from + 999);
-    if (error) throw new Error(`${table}: ${error.message}`);
-    out.push(...data);
-    if (data.length < 1000) return out;
-  }
+// The driver ignores `types` given to neon(); it only honours it per query (transactions included).
+const run = (text: string, params: unknown[] = []) => sql().query(text, params, { types: parsers });
+
+/** Rows of one parameterized query. */
+export const q = <T = Row,>(text: string, params: unknown[] = []) => run(text, params) as Promise<T[]>;
+/** First row or null. */
+export const one = async <T = Row,>(text: string, params: unknown[] = []) => (await q<T>(text, params))[0] ?? null;
+
+// One round trip, one consistent snapshot of every table.
+export async function loadTables(): Promise<Tables> {
+  const rows = await sql().transaction(TABLES.map((t) => run(`select * from ${t}`)), { readOnly: true });
+  return Object.fromEntries(TABLES.map((t, i) => [t, rows[i]])) as Tables;
 }
 
-export async function loadTables(): Promise<Tables> {
-  const rows = await Promise.all(TABLES.map(selectAll));
-  return Object.fromEntries(TABLES.map((t, i) => [t, rows[i]])) as Tables;
+/* ---------- generic writes for the leader store (save(ops)) ---------- */
+
+const PK: Record<string, string[]> = {
+  settings: ["id"], positions: ["id"], emp_statuses: ["id"], att_statuses: ["id"], trainings: ["id"], processes: ["id"],
+  members: ["id"], skill_levels: ["member_id", "process_id"], plans: ["id"], skill_logs: ["id"],
+  member_trainings: ["member_id", "training_id"], attendance: ["member_id", "date"], holidays: ["date"], snapshots: ["id"],
+};
+
+// Column names come from the browser: only plain identifiers, always quoted. Values go in as JSON parameters.
+function cols(keys: string[]): string {
+  for (const k of keys) if (!/^[a-z_][a-z0-9_]*$/.test(k)) throw new Error(`Kolom tidak valid: ${k}`);
+  return keys.map((k) => `"${k}"`).join(", ");
+}
+
+/** All ops in one transaction: either every write lands or none. Table is whitelisted by the caller. */
+export async function applyOps(ops: Op[]) {
+  await sql().transaction(ops.map((op) => {
+    const t = op.table;
+    if ("upsert" in op) {
+      // union of keys, like PostgREST upsert: a key missing from one row is written as null
+      const keys = [...new Set(op.upsert.flatMap((r) => Object.keys(r)))];
+      const pk = PK[t];
+      const rest = keys.filter((k) => !pk.includes(k));
+      const conflict = rest.length ? `do update set ${rest.map((k) => `"${k}" = excluded."${k}"`).join(", ")}` : "do nothing";
+      return run(`insert into ${t} (${cols(keys)}) select ${cols(keys)} from json_populate_recordset(null::${t}, $1::json)
+        on conflict (${cols(pk)}) ${conflict}`, [JSON.stringify(op.upsert)]);
+    }
+    const match = "update" in op ? op.match : op.delete;
+    const mk = Object.keys(match);
+    if (!mk.length) throw new Error("Perubahan tanpa kunci ditolak.");
+    const where = `(${cols(mk)}) = (select ${cols(mk)} from json_populate_record(null::${t}, $1::json))`;
+    if ("delete" in op) return run(`delete from ${t} where ${where}`, [JSON.stringify(match)]);
+    const uk = Object.keys(op.update);
+    return run(`update ${t} set (${cols(uk)}) = (select ${cols(uk)} from json_populate_record(null::${t}, $2::json)) where ${where}`,
+      [JSON.stringify(match), JSON.stringify(op.update)]);
+  }));
 }

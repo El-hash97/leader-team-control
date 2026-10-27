@@ -1,7 +1,7 @@
 "use server";
 // PRD v3 M13 Voice + M14 Cuti. Member functions take the member id from the session only (requireMember);
 // leader functions require the leader cookie (isAuthed). Every input is re-validated here.
-import { db } from "@/lib/server/db";
+import { one, q } from "@/lib/server/db";
 import { isAuthed } from "@/lib/server/session";
 import { requireMember } from "@/lib/server/member";
 import {
@@ -13,20 +13,23 @@ import { VOICE_CATEGORIES, type LeaveStatus, type VoiceCategory } from "@/compon
 type Result<T = object> = ({ ok: true } & T) | { ok: false; error: string };
 const EXPIRED = { ok: false as const, error: "Sesi habis. Silakan masuk lagi." };
 const isDate = (s: string) => /^\d{4}-\d{2}-\d{2}$/.test(s) && !Number.isNaN(Date.parse(s));
-const one = <T,>(x: unknown) => (Array.isArray(x) ? x[0] : x) as T | null;
-
 async function workCfg(from: ISODate, to: ISODate) {
-  const c = db();
   const [s, h] = await Promise.all([
-    c.from("settings").select("work_weekdays, default_min_backup").limit(1).maybeSingle(),
-    c.from("holidays").select("date").gte("date", from).lte("date", to),
+    one<{ work_weekdays: number[]; default_min_backup: number }>("select work_weekdays, default_min_backup from settings limit 1"),
+    q<{ date: ISODate }>("select date from holidays where date between $1 and $2", [from, to]),
   ]);
   return {
-    workWeekdays: (s.data?.work_weekdays as number[] | undefined) ?? [1, 2, 3, 4, 5],
-    defaultMinBackup: (s.data?.default_min_backup as number | undefined) ?? 2,
-    holidays: (h.data ?? []).map((r) => r.date as ISODate),
+    workWeekdays: s?.work_weekdays ?? [1, 2, 3, 4, 5],
+    defaultMinBackup: s?.default_min_backup ?? 2,
+    holidays: h.map((r) => r.date),
   };
 }
+
+type VoiceDb = {
+  id: string; member_id: string; category: VoiceCategory; process_id: string | null; process_name: string | null; body: string;
+  photo_url: string | null; has_photo: boolean | null; created_at: string; read_at: string | null; reply: string | null;
+  replied_at: string | null; member_seen_at: string | null; member_name: string | null; noreg: string | null; member_photo: string | null;
+};
 
 /* ======================= member: Voice ======================= */
 
@@ -38,12 +41,12 @@ export type MemberVoice = {
 export async function myVoices(): Promise<MemberVoice[]> {
   const me = await requireMember();
   if (!me) return [];
-  const { data } = await db().from("voices")
-    .select("id, category, body, photo_url, created_at, read_at, reply, replied_at, member_seen_at, processes(name)")
-    .eq("member_id", me.id).order("created_at", { ascending: false }).limit(100);
-  return (data ?? []).map((v) => ({
+  const data = await q<VoiceDb>(`select v.id, v.category, v.body, v.photo_url, v.created_at, v.read_at, v.reply, v.replied_at, v.member_seen_at,
+      p.name as process_name from voices v left join processes p on p.id = v.process_id
+    where v.member_id = $1 order by v.created_at desc limit 100`, [me.id]);
+  return data.map((v) => ({
     id: v.id, category: v.category, body: v.body, photo: v.photo_url, createdAt: v.created_at,
-    processName: one<{ name: string }>(v.processes)?.name ?? null,
+    processName: v.process_name,
     status: voiceStatus(v), reply: v.reply, repliedAt: v.replied_at, unseen: !!v.replied_at && !v.member_seen_at,
   }));
 }
@@ -59,22 +62,26 @@ export async function sendVoice(input: { category: string; processId: string | n
   if (body.length > 1000) return { ok: false, error: "Isi voice maksimal 1000 karakter." };
   let processId: string | null = null;
   if (category === "BELAJAR") {
-    const { data } = await db().from("processes").select("id").eq("id", input.processId ?? "").eq("active", true).maybeSingle();
+    const data = await one<{ id: string }>("select id from processes where id = $1 and active", [input.processId ?? ""]);
     if (!data) return { ok: false, error: "Pilih proses yang ingin dipelajari." };
     processId = data.id;
   }
   const photo = input.photo;
   if (photo && (!photo.startsWith("data:image/jpeg;base64,") || photo.length > 420_000)) return { ok: false, error: "Foto tidak valid atau terlalu besar." };
-  const { error } = await db().from("voices").insert({ member_id: me.id, category, process_id: processId, body, photo_url: photo || null });
-  return error ? { ok: false, error: "Gagal mengirim. Coba lagi." } : { ok: true };
+  try {
+    await q("insert into voices (member_id, category, process_id, body, photo_url) values ($1, $2, $3, $4, $5)",
+      [me.id, category, processId, body, photo || null]);
+  } catch {
+    return { ok: false, error: "Gagal mengirim. Coba lagi." };
+  }
+  return { ok: true };
 }
 
 /** F-1305: opening the Voice tab clears the unread-reply badge. */
 export async function markRepliesSeen(): Promise<void> {
   const me = await requireMember();
   if (!me) return;
-  await db().from("voices").update({ member_seen_at: new Date().toISOString() })
-    .eq("member_id", me.id).not("replied_at", "is", null).is("member_seen_at", null);
+  await q("update voices set member_seen_at = now() where member_id = $1 and replied_at is not null and member_seen_at is null", [me.id]);
 }
 
 /* ======================= member: Cuti ======================= */
@@ -85,35 +92,34 @@ export type LeaveRow = {
   status: LeaveStatus; decisionNote: string | null; decidedAt: string | null; createdAt: string;
 };
 
-const LEAVE_COLS = "id, member_id, att_status_id, start_date, end_date, workdays, reason, status, decision_note, decided_at, created_at, members(name, noreg, photo_url), att_statuses(name)";
+const LEAVE_SELECT = `select l.id, l.member_id, l.att_status_id, l.start_date, l.end_date, l.workdays, l.reason, l.status, l.decision_note,
+    l.decided_at, l.created_at, m.name as member_name, m.noreg, m.photo_url, a.name as type_name
+  from leave_requests l join members m on m.id = l.member_id left join att_statuses a on a.id = l.att_status_id`;
 type LeaveDb = {
   id: string; member_id: string; att_status_id: string; start_date: ISODate; end_date: ISODate; workdays: number; reason: string;
-  status: LeaveStatus; decision_note: string | null; decided_at: string | null; created_at: string; members: unknown; att_statuses: unknown;
+  status: LeaveStatus; decision_note: string | null; decided_at: string | null; created_at: string;
+  member_name: string | null; noreg: string | null; photo_url: string | null; type_name: string | null;
 };
-const toLeave = (r: LeaveDb): LeaveRow => {
-  const m = one<{ name: string; noreg: string; photo_url: string | null }>(r.members);
-  return {
-    id: r.id, memberId: r.member_id, memberName: m?.name ?? "-", noreg: m?.noreg ?? "", photoUrl: m?.photo_url ?? null,
-    attStatusId: r.att_status_id, typeName: one<{ name: string }>(r.att_statuses)?.name ?? "Cuti", start: r.start_date, end: r.end_date,
-    workdays: r.workdays, reason: r.reason, status: r.status, decisionNote: r.decision_note, decidedAt: r.decided_at, createdAt: r.created_at,
-  };
-};
+const toLeave = (r: LeaveDb): LeaveRow => ({
+  id: r.id, memberId: r.member_id, memberName: r.member_name ?? "-", noreg: r.noreg ?? "", photoUrl: r.photo_url,
+  attStatusId: r.att_status_id, typeName: r.type_name ?? "Cuti", start: r.start_date, end: r.end_date,
+  workdays: r.workdays, reason: r.reason, status: r.status, decisionNote: r.decision_note, decidedAt: r.decided_at, createdAt: r.created_at,
+});
 
 /** Form data for the member: LEAVE-type statuses and the calendar needed to count working days in the browser. */
 export async function leaveForm(): Promise<{ types: { id: string; name: string }[]; workWeekdays: number[]; holidays: ISODate[]; today: ISODate }> {
   const today = todayJakarta();
   const [types, cfg] = await Promise.all([
-    db().from("att_statuses").select("id, name, sort").eq("category", "LEAVE").order("sort"),
+    q<{ id: string; name: string }>("select id, name from att_statuses where category = 'LEAVE' order by sort"),
     workCfg(today, addDays(today, 400)),
   ]);
-  return { types: (types.data ?? []).map((t) => ({ id: t.id, name: t.name })), workWeekdays: cfg.workWeekdays, holidays: cfg.holidays, today };
+  return { types, workWeekdays: cfg.workWeekdays, holidays: cfg.holidays, today };
 }
 
 export async function myLeaves(): Promise<LeaveRow[]> {
   const me = await requireMember();
   if (!me) return [];
-  const { data } = await db().from("leave_requests").select(LEAVE_COLS).eq("member_id", me.id).order("start_date", { ascending: false }).limit(100);
-  return ((data ?? []) as LeaveDb[]).map(toLeave);
+  return (await q<LeaveDb>(`${LEAVE_SELECT} where l.member_id = $1 order by l.start_date desc limit 100`, [me.id])).map(toLeave);
 }
 
 /** F-1401 */
@@ -127,39 +133,41 @@ export async function requestLeave(input: { attStatusId: string; start: string; 
   if (start < todayJakarta()) return { ok: false, error: "Tanggal mulai tidak boleh sebelum hari ini." };
   if (end > addDays(start, 90)) return { ok: false, error: "Satu pengajuan maksimal 90 hari kalender." };
   if (reason.length < 5 || reason.length > 500) return { ok: false, error: "Alasan wajib diisi, 5–500 karakter." };
-  const c = db();
-  const { data: type } = await c.from("att_statuses").select("id").eq("id", input.attStatusId).eq("category", "LEAVE").maybeSingle();
+  const type = await one<{ id: string }>("select id from att_statuses where id = $1 and category = 'LEAVE'", [input.attStatusId]);
   if (!type) return { ok: false, error: "Pilih jenis cuti." };
   const cfg = await workCfg(start, end);
   const workdays = workdayList(start, end, cfg.workWeekdays, cfg.holidays).length;
   if (!workdays) return { ok: false, error: "Rentang tanggal itu tidak berisi hari kerja." };
-  const { data: mine } = await c.from("leave_requests").select("start_date, end_date").eq("member_id", me.id).in("status", ["PENDING", "APPROVED"]);
-  if ((mine ?? []).some((r) => leaveOverlaps({ start, end }, { start: r.start_date, end: r.end_date })))
+  const mine = await q<{ start_date: ISODate; end_date: ISODate }>(
+    "select start_date, end_date from leave_requests where member_id = $1 and status in ('PENDING', 'APPROVED')", [me.id]);
+  if (mine.some((r) => leaveOverlaps({ start, end }, { start: r.start_date, end: r.end_date })))
     return { ok: false, error: "Tanggal ini bertumpuk dengan pengajuan cuti kamu yang lain." };
-  const { error } = await c.from("leave_requests").insert({ member_id: me.id, att_status_id: type.id, start_date: start, end_date: end, workdays, reason });
-  return error ? { ok: false, error: "Gagal mengirim. Coba lagi." } : { ok: true };
+  try {
+    await q("insert into leave_requests (member_id, att_status_id, start_date, end_date, workdays, reason) values ($1, $2, $3, $4, $5, $6)",
+      [me.id, type.id, start, end, workdays, reason]);
+  } catch {
+    return { ok: false, error: "Gagal mengirim. Coba lagi." };
+  }
+  return { ok: true };
 }
 
 /** F-1402: only while still pending. */
 export async function cancelMyLeave(id: string): Promise<Result> {
   const me = await requireMember();
   if (!me) return EXPIRED;
-  const { data } = await db().from("leave_requests").update({ status: "CANCELLED" })
-    .eq("id", id).eq("member_id", me.id).eq("status", "PENDING").select("id");
-  return data?.length ? { ok: true } : { ok: false, error: "Pengajuan sudah diputuskan, tidak bisa dibatalkan." };
+  const data = await q("update leave_requests set status = 'CANCELLED' where id = $1 and member_id = $2 and status = 'PENDING' returning id", [id, me.id]);
+  return data.length ? { ok: true } : { ok: false, error: "Pengajuan sudah diputuskan, tidak bisa dibatalkan." };
 }
 
 /* ======================= leader ======================= */
 
 export async function inboxCounts(): Promise<{ voiceNew: number; voiceOpen: number; leavePending: number }> {
   if (!(await isAuthed())) return { voiceNew: 0, voiceOpen: 0, leavePending: 0 };
-  const c = db();
-  const [a, b, l] = await Promise.all([
-    c.from("voices").select("id", { count: "exact", head: true }).is("read_at", null),
-    c.from("voices").select("id", { count: "exact", head: true }).is("replied_at", null),
-    c.from("leave_requests").select("id", { count: "exact", head: true }).eq("status", "PENDING"),
-  ]);
-  return { voiceNew: a.count ?? 0, voiceOpen: b.count ?? 0, leavePending: l.count ?? 0 };
+  const r = await one<{ voice_new: number; voice_open: number; leave_pending: number }>(`select
+    (select count(*)::int from voices where read_at is null) as voice_new,
+    (select count(*)::int from voices where replied_at is null) as voice_open,
+    (select count(*)::int from leave_requests where status = 'PENDING') as leave_pending`);
+  return { voiceNew: r?.voice_new ?? 0, voiceOpen: r?.voice_open ?? 0, leavePending: r?.leave_pending ?? 0 };
 }
 
 export type LeaderVoice = {
@@ -171,26 +179,23 @@ export type LeaderVoice = {
 /** F-1303: unanswered K3 first, then unanswered, then answered; newest first inside each group. Photos load on open. */
 export async function listVoices(): Promise<LeaderVoice[]> {
   if (!(await isAuthed())) return [];
-  const { data } = await db().from("voices")
-    .select("id, member_id, category, process_id, body, has_photo, created_at, read_at, reply, replied_at, members(name, noreg, photo_url), processes(name)")
-    .order("created_at", { ascending: false }).limit(500);
+  const data = await q<VoiceDb>(`select v.id, v.member_id, v.category, v.process_id, v.body, v.has_photo, v.created_at, v.read_at, v.reply,
+      v.replied_at, m.name as member_name, m.noreg, m.photo_url as member_photo, p.name as process_name
+    from voices v join members m on m.id = v.member_id left join processes p on p.id = v.process_id
+    order by v.created_at desc limit 500`);
   const rank = (v: LeaderVoice) => (v.status === "REPLIED" ? 2 : v.category === "K3" ? 0 : 1);
-  return (data ?? []).map((v): LeaderVoice => {
-    const m = one<{ name: string; noreg: string; photo_url: string | null }>(v.members);
-    return {
-      id: v.id, memberId: v.member_id, memberName: m?.name ?? "-", noreg: m?.noreg ?? "", photoUrl: m?.photo_url ?? null,
-      category: v.category, processId: v.process_id, processName: one<{ name: string }>(v.processes)?.name ?? null, body: v.body,
-      hasPhoto: !!v.has_photo, createdAt: v.created_at, readAt: v.read_at, reply: v.reply, repliedAt: v.replied_at, status: voiceStatus(v),
-    };
-  }).sort((a, b) => rank(a) - rank(b));
+  return data.map((v): LeaderVoice => ({
+    id: v.id, memberId: v.member_id, memberName: v.member_name ?? "-", noreg: v.noreg ?? "", photoUrl: v.member_photo,
+    category: v.category, processId: v.process_id, processName: v.process_name, body: v.body,
+    hasPhoto: !!v.has_photo, createdAt: v.created_at, readAt: v.read_at, reply: v.reply, repliedAt: v.replied_at, status: voiceStatus(v),
+  })).sort((a, b) => rank(a) - rank(b));
 }
 
 /** F-1304: opening marks it read once and returns the attached photo. */
 export async function openVoice(id: string): Promise<Result<{ photo: string | null }>> {
   if (!(await isAuthed())) return EXPIRED;
-  const c = db();
-  await c.from("voices").update({ read_at: new Date().toISOString() }).eq("id", id).is("read_at", null);
-  const { data } = await c.from("voices").select("photo_url").eq("id", id).maybeSingle();
+  await q("update voices set read_at = now() where id = $1 and read_at is null", [id]);
+  const data = await one<{ photo_url: string | null }>("select photo_url from voices where id = $1", [id]);
   return data ? { ok: true, photo: data.photo_url } : { ok: false, error: "Voice tidak ditemukan." };
 }
 
@@ -200,17 +205,15 @@ export async function replyVoice(id: string, reply: string): Promise<Result> {
   const text = reply.trim();
   if (!text || text.length > 1000) return { ok: false, error: "Balasan wajib diisi, maksimal 1000 karakter." };
   const now = new Date().toISOString();
-  const { data } = await db().from("voices").update({ reply: text, replied_at: now })
-    .eq("id", id).is("replied_at", null).select("read_at");
-  if (!data?.length) return { ok: false, error: "Voice ini sudah dibalas." };
-  if (!data[0].read_at) await db().from("voices").update({ read_at: now }).eq("id", id);
+  const data = await q("update voices set reply = $1, replied_at = $2, read_at = coalesce(read_at, $2) where id = $3 and replied_at is null returning id",
+    [text, now, id]);
+  if (!data.length) return { ok: false, error: "Voice ini sudah dibalas." };
   return { ok: true };
 }
 
 export async function listLeaves(): Promise<LeaveRow[]> {
   if (!(await isAuthed())) return [];
-  const { data } = await db().from("leave_requests").select(LEAVE_COLS).order("start_date", { ascending: false }).limit(1000);
-  return ((data ?? []) as LeaveDb[]).map(toLeave);
+  return (await q<LeaveDb>(`${LEAVE_SELECT} order by l.start_date desc limit 1000`)).map(toLeave);
 }
 
 export type LeaveDay = { date: ISODate; others: string[]; short: { name: string; count: number; min: number }[] };
@@ -218,26 +221,26 @@ export type LeaveDay = { date: ISODate; others: string[]; short: { name: string;
 /** F-1404: per working day, who else is off (approved or pending) and which processes lose their minimum backup. */
 export async function leaveCheck(id: string): Promise<Result<{ days: LeaveDay[] }>> {
   if (!(await isAuthed())) return EXPIRED;
-  const c = db();
-  const { data: req } = await c.from("leave_requests").select("member_id, start_date, end_date").eq("id", id).maybeSingle();
+  const req = await one<{ member_id: string; start_date: ISODate; end_date: ISODate }>(
+    "select member_id, start_date, end_date from leave_requests where id = $1", [id]);
   if (!req) return { ok: false, error: "Pengajuan tidak ditemukan." };
-  const [cfg, others, procs, levels, active] = await Promise.all([
+  const [cfg, others, procs, levels] = await Promise.all([
     workCfg(req.start_date, req.end_date),
-    c.from("leave_requests").select("member_id, start_date, end_date, members(name)").neq("id", id).in("status", ["PENDING", "APPROVED"])
-      .lte("start_date", req.end_date).gte("end_date", req.start_date),
-    c.from("processes").select("id, name, min_backup").eq("active", true).order("sort"),
-    c.from("skill_levels").select("member_id, process_id, level"),
-    c.from("members").select("id").eq("active", true),
+    q<{ member_id: string; start_date: ISODate; end_date: ISODate; name: string | null }>(`select l.member_id, l.start_date, l.end_date, m.name
+      from leave_requests l join members m on m.id = l.member_id
+      where l.id <> $1 and l.status in ('PENDING', 'APPROVED') and l.start_date <= $3 and l.end_date >= $2`, [id, req.start_date, req.end_date]),
+    q<{ id: string; name: string; min_backup: number | null }>("select id, name, min_backup from processes where active order by sort"),
+    q<{ member_id: string; process_id: string; level: number }>(
+      "select s.member_id, s.process_id, s.level from skill_levels s join members m on m.id = s.member_id where m.active"),
   ]);
-  const activeIds = new Set((active.data ?? []).map((m) => m.id));
   const byMember: Record<string, LevelMap> = {};
-  for (const l of levels.data ?? []) if (activeIds.has(l.member_id)) (byMember[l.member_id] ??= {})[l.process_id] = l.level;
-  const processes = (procs.data ?? []).map((p) => ({ id: p.id, name: p.name, minBackup: p.min_backup ?? cfg.defaultMinBackup }));
+  for (const l of levels) (byMember[l.member_id] ??= {})[l.process_id] = l.level;
+  const processes = procs.map((p) => ({ id: p.id, name: p.name, minBackup: p.min_backup ?? cfg.defaultMinBackup }));
   const days = workdayList(req.start_date, req.end_date, cfg.workWeekdays, cfg.holidays).map((date): LeaveDay => {
-    const off = (others.data ?? []).filter((o) => o.start_date <= date && date <= o.end_date);
+    const off = others.filter((o) => o.start_date <= date && date <= o.end_date);
     return {
       date,
-      others: off.map((o) => one<{ name: string }>(o.members)?.name ?? "-"),
+      others: off.map((o) => o.name ?? "-"),
       short: backupShortfall(req.member_id, byMember, new Set(off.map((o) => o.member_id)), processes).map(({ name, count, min }) => ({ name, count, min })),
     };
   });
@@ -250,21 +253,22 @@ export async function decideLeave(id: string, approve: boolean, note: string): P
   const text = note.trim();
   if (!approve && !text) return { ok: false, error: "Alasan penolakan wajib diisi." };
   if (text.length > 500) return { ok: false, error: "Catatan maksimal 500 karakter." };
-  const c = db();
   // The status guard makes a double click or a second leader tab a no-op instead of a double decision.
-  const { data } = await c.from("leave_requests")
-    .update({ status: approve ? "APPROVED" : "REJECTED", decision_note: text || null, decided_at: new Date().toISOString() })
-    .eq("id", id).eq("status", "PENDING").select("member_id, att_status_id, start_date, end_date");
-  const req = data?.[0];
+  const req = await one<{ member_id: string; att_status_id: string; start_date: ISODate; end_date: ISODate }>(
+    `update leave_requests set status = $1, decision_note = $2, decided_at = now() where id = $3 and status = 'PENDING'
+    returning member_id, att_status_id, start_date, end_date`, [approve ? "APPROVED" : "REJECTED", text || null, id]);
   if (!req) return { ok: false, error: "Pengajuan ini sudah diputuskan atau dibatalkan." };
   if (!approve) return { ok: true };
   const cfg = await workCfg(req.start_date, req.end_date);
-  const rows = workdayList(req.start_date, req.end_date, cfg.workWeekdays, cfg.holidays)
-    .map((date) => ({ member_id: req.member_id, date, status_id: req.att_status_id, note: "", leave_request_id: id }));
-  const { error } = rows.length ? await c.from("attendance").upsert(rows) : { error: null };
-  if (error) {
-    await c.from("leave_requests").update({ status: "PENDING", decision_note: null, decided_at: null }).eq("id", id);
-    return { ok: false, error: `Gagal mengisi absensi: ${error.message}` };
+  const dates = workdayList(req.start_date, req.end_date, cfg.workWeekdays, cfg.holidays);
+  try {
+    if (dates.length) await q(`insert into attendance (member_id, date, status_id, note, leave_request_id)
+      select $1, d, $2, '', $3 from unnest($4::date[]) d
+      on conflict (member_id, date) do update set status_id = excluded.status_id, note = excluded.note, leave_request_id = excluded.leave_request_id`,
+      [req.member_id, req.att_status_id, id, dates]);
+  } catch (e) {
+    await q("update leave_requests set status = 'PENDING', decision_note = null, decided_at = null where id = $1", [id]);
+    return { ok: false, error: `Gagal mengisi absensi: ${(e as Error).message}` };
   }
   return { ok: true };
 }
@@ -272,11 +276,13 @@ export async function decideLeave(id: string, approve: boolean, note: string): P
 /** F-1407: cancel an approved leave; only attendance rows still tagged with it are removed. */
 export async function cancelApprovedLeave(id: string, note: string): Promise<Result> {
   if (!(await isAuthed())) return EXPIRED;
-  const c = db();
-  const { data } = await c.from("leave_requests")
-    .update({ status: "CANCELLED", decision_note: note.trim() || null, decided_at: new Date().toISOString() })
-    .eq("id", id).eq("status", "APPROVED").select("id");
-  if (!data?.length) return { ok: false, error: "Hanya cuti yang sudah disetujui yang bisa dibatalkan di sini." };
-  const { error } = await c.from("attendance").delete().eq("leave_request_id", id);
-  return error ? { ok: false, error: `Status dibatalkan, tapi absensi gagal dihapus: ${error.message}` } : { ok: true };
+  const data = await q("update leave_requests set status = 'CANCELLED', decision_note = $1, decided_at = now() where id = $2 and status = 'APPROVED' returning id",
+    [note.trim() || null, id]);
+  if (!data.length) return { ok: false, error: "Hanya cuti yang sudah disetujui yang bisa dibatalkan di sini." };
+  try {
+    await q("delete from attendance where leave_request_id = $1", [id]);
+  } catch (e) {
+    return { ok: false, error: `Status dibatalkan, tapi absensi gagal dihapus: ${(e as Error).message}` };
+  }
+  return { ok: true };
 }
